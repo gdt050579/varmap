@@ -1,6 +1,7 @@
-use crate::ArenaIndex;
+use crate::{Arena, ArenaIndex};
 
-pub(crate) enum Value {
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum ValueKind {
     Bool(bool),
     I32(i32),
     U32(u32),
@@ -11,4 +12,41 @@ pub(crate) enum Value {
     String(ArenaIndex),
     Bytes(ArenaIndex),
     Custom(ArenaIndex),
+}
+
+pub struct Value<'a> {
+    kind: ValueKind,
+    arena: &'a Arena
+}
+
+impl<'a> Value<'a> {
+    #[inline(always)]
+    pub(crate) fn new(kind: ValueKind, arena: &'a Arena) -> Self {
+        Self { kind, arena }
+    }
+    #[inline(always)]
+    pub(crate) fn kind(&self) -> ValueKind {
+        self.kind
+    }
+    #[inline(always)]
+    pub(crate) fn arena(&self) -> &Arena {
+        self.arena
+    }
+}
+pub struct ValueBuilder<'a> {
+    arena: &'a mut Arena,
+}
+impl<'a> ValueBuilder<'a> {
+    #[inline(always)]
+    pub(crate) fn new(arena: &'a mut Arena) -> Self {
+        Self { arena }
+    }
+    #[inline(always)]
+    pub(crate) fn arena(&self) -> &Arena {
+        self.arena
+    }
+    #[inline(always)]
+    pub(crate) fn arena_mut(&mut self) -> &mut Arena {
+        &mut self.arena
+    }
 }
