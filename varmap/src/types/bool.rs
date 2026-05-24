@@ -7,7 +7,7 @@ impl VarMapValue for bool {
     }
     fn from_value<'a>(value: &'a Value<'a>) -> Option<bool> {
         match value.kind() {
-            ValueKind::Bool(b) => Some(b),
+            ValueKind::Bool(b) => Some(*b),
             _ => None,
         }
     }

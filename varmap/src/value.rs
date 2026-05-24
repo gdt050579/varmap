@@ -9,6 +9,7 @@ pub(crate) enum ValueKind {
     U64(u64),
     F32(f32),
     F64(f64),
+    SmallString([u8; 14],u8),
     String(ArenaIndex),
     Bytes(ArenaIndex),
     Custom(ArenaIndex),
@@ -25,8 +26,8 @@ impl<'a> Value<'a> {
         Self { kind, arena }
     }
     #[inline(always)]
-    pub(crate) fn kind(&self) -> ValueKind {
-        self.kind
+    pub(crate) fn kind(&self) -> &ValueKind {
+        &self.kind
     }
     #[inline(always)]
     pub(crate) fn arena(&self) -> &Arena {
