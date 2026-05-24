@@ -13,20 +13,15 @@ impl VarMapValue for &str {
             )
         } else {
             Value::new(
-                ValueKind::String(
-                    builder
-                        .arena_mut()
-                        .store(self.as_bytes(), MemAlign::Bits8, 0),
-                ),
+                ValueKind::String(builder.arena_mut().store(self.as_bytes(), MemAlign::Bits8)),
                 builder.arena(),
             )
         }
-
     }
     fn from_value<'a>(value: &'a Value<'a>) -> Option<&'a str> {
         match value.kind() {
             ValueKind::String(index) => {
-                if let Some(s) = value.arena().get(*index, 0) {
+                if let Some(s) = value.arena().get(*index) {
                     Some(unsafe { std::str::from_utf8_unchecked(s) })
                 } else {
                     None

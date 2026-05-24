@@ -3,21 +3,26 @@ use crate::{Arena, ArenaIndex};
 #[derive(Clone, Copy, Debug)]
 pub(crate) enum ValueKind {
     Bool(bool),
+    I8(i8),
+    U8(u8),
+    I16(i16),
+    U16(u16),
     I32(i32),
     U32(u32),
     I64(i64),
     U64(u64),
     F32(f32),
     F64(f64),
-    SmallString([u8; 14],u8),
+    SmallString([u8; 14], u8),
     String(ArenaIndex),
+    SmallBytes([u8; 14], u8),
     Bytes(ArenaIndex),
-    Custom(ArenaIndex),
+    Custom(ArenaIndex, u32),
 }
 
 pub struct Value<'a> {
     kind: ValueKind,
-    arena: &'a Arena
+    arena: &'a Arena,
 }
 
 impl<'a> Value<'a> {
@@ -48,6 +53,6 @@ impl<'a> ValueBuilder<'a> {
     }
     #[inline(always)]
     pub(crate) fn arena_mut(&mut self) -> &mut Arena {
-        &mut self.arena
+        self.arena
     }
 }

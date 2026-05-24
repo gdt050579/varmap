@@ -4,7 +4,6 @@ use crate::MemAlign;
 pub(crate) struct ArenaIndex {
     offset: u32,
     size: u32,
-    typeid: u32,
 }
 pub(crate) struct Arena {
     data: Vec<u128>,
@@ -17,7 +16,7 @@ impl Arena {
             current_offset: 0,
         }
     }
-    pub(crate) fn store(&mut self, buf: &[u8], align: MemAlign, typeid: u32) -> ArenaIndex {
+    pub(crate) fn store(&mut self, buf: &[u8], align: MemAlign) -> ArenaIndex {
         let start = align.align_offset(self.current_offset);
         let end = start + buf.len();
         let data_len = (end + 15) / 16; // rotunjim la 16 bytes
@@ -32,16 +31,12 @@ impl Arena {
         ArenaIndex {
             offset: start as u32,
             size: buf.len() as u32,
-            typeid,
         }
     }
     pub(crate) fn clear(&mut self) {
         self.current_offset = 0;
     }
-    pub(crate) fn get(&self, index: ArenaIndex, typeid: u32) -> Option<&[u8]> {
-        if index.typeid != typeid {
-            return None;
-        }
+    pub(crate) fn get(&self, index: ArenaIndex) -> Option<&[u8]> {
         let start = index.offset as usize;
         let end = start + index.size as usize;
         if end > self.current_offset {
