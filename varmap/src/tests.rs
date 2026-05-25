@@ -128,3 +128,11 @@ fn check_str_var_map() {
     assert_eq!(map.get_u32("var2"), Some(2u32));
     assert_eq!(map.get_str("var3"), Some("Hello, world! "));
 }
+
+#[test]
+fn check_get_bytes() {
+    let mut map = StrVarMap::new();
+    let bytes = [1u8, 2u8, 3u8];
+    map.set("var1", bytes.as_slice());
+    assert_eq!(map.get_bytes("var1"), Some(bytes.as_slice()));
+}

@@ -5,7 +5,7 @@ macro_rules! impl_varmap_numeric {
         $(
             impl VarMapValue for $ty {
                 type Decoded<'a> = $ty;
-                const TYPE_ID: i32 = 0;
+                const TYPE_ID: u32 = 0;
                 fn to_value<'a>(&self, builder: &'a mut ValueBuilder<'a>) -> Value<'a> {
                     Value::new(ValueKind::$variant(*self), builder.arena())
                 }
@@ -42,7 +42,7 @@ impl_varmap_numeric! {
 impl VarMapValue for u128 {
     type Decoded<'a> = u128;
 
-    const TYPE_ID: i32 = 0;
+    const TYPE_ID: u32 = 0;
 
     fn to_value<'a>(&self, builder: &'a mut ValueBuilder<'a>) -> Value<'a> {
         Value::new(
@@ -74,7 +74,7 @@ impl VarMapStoredValue for u128 {
 impl VarMapValue for i128 {
     type Decoded<'a> = i128;
 
-    const TYPE_ID: i32 = 0;
+    const TYPE_ID: u32 = 0;
 
     fn to_value<'a>(&self, builder: &'a mut ValueBuilder<'a>) -> Value<'a> {
         Value::new(

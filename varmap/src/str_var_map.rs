@@ -55,6 +55,7 @@ impl StrVarMap {
         get_f32  => f32,
         get_f64  => f64,
         get_str  => &str,
+        get_bytes => &[u8],
     }    
     pub fn contains(&self, var_name: &str) -> bool {
         self.map.contains(Key::new(fnv1a(var_name)))

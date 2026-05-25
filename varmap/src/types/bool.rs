@@ -3,7 +3,7 @@ use crate::*;
 impl VarMapValue for bool {
     type Decoded<'a> = bool;
 
-    const TYPE_ID: i32 = 0;
+    const TYPE_ID: u32 = 0;
 
     fn to_value<'a>(&self, builder: &'a mut ValueBuilder<'a>) -> Value<'a> {
         Value::new(ValueKind::Bool(*self), builder.arena())

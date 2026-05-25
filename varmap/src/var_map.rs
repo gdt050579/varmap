@@ -101,6 +101,7 @@ impl VarMap {
         get_f32  => f32,
         get_f64  => f64,
         get_str  => &str,
+        get_bytes => &[u8],
     }
 
     #[inline(always)]
