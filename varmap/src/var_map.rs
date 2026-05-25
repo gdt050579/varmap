@@ -27,6 +27,18 @@ impl Hash {
         (self.data & Hash::INDEX_MASK) as usize
     }
 }
+
+macro_rules! impl_getters {
+    ($($name:ident => $ty:ty),* $(,)?) => {
+        $(
+            #[inline(always)]
+            pub fn $name(&self, key: Key) -> Option<$ty> {
+                self.get::<$ty>(key)
+            }
+        )*
+    };
+}
+
 pub struct VarMap {
     arena: Arena,
     hashes: Vec<Hash>,
@@ -39,6 +51,11 @@ impl VarMap {
             hashes: Vec::new(),
             values: Vec::new(),
         }
+    }
+    pub fn clear(&mut self) {
+        self.arena.clear();
+        self.hashes.clear();
+        self.values.clear();
     }
     pub fn set<T: VarMapValue>(&mut self, key: Key, value: T) {
         let mut builder = ValueBuilder::new(&mut self.arena);
@@ -71,6 +88,20 @@ impl VarMap {
             None
         }
     }
+    impl_getters! {
+        get_bool => bool,
+        get_u8   => u8,
+        get_u16  => u16,
+        get_u32  => u32,
+        get_u64  => u64,
+        get_i8   => i8,
+        get_i16  => i16,
+        get_i32  => i32,
+        get_i64  => i64,
+        get_f32  => f32,
+        get_f64  => f64,
+    }
+
     #[inline(always)]
     pub fn contains(&self, key: Key) -> bool {
         let hvalue = key.hash & Hash::HASH_MASK;

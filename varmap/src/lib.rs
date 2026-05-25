@@ -2,6 +2,7 @@ mod arena;
 mod value;
 mod mem_align;
 mod var_map;
+mod string_var_map;
 mod traits;
 mod types;
 
@@ -14,6 +15,7 @@ pub(crate) use value::ValueKind;
 
 pub use mem_align::MemAlign;
 pub use var_map::VarMap;
+pub use string_var_map::StringVarMap;
 pub use traits::VarMapValue;
 pub use value::Value;
 pub use value::ValueBuilder;
