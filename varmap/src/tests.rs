@@ -1,4 +1,5 @@
 use crate::*;
+use crate::var_map::Key;
 use std::fmt::Debug;
 
 fn check_type_value<T>(obj: T, kind: ValueKind)
@@ -96,4 +97,20 @@ fn check_value_u128() {
     assert_eq!(*value.kind(), ValueKind::U128(ArenaIndex::new(0, 16))); // first offset in the arena index
     let value2 = u128::from_value(&value);
     assert_eq!(value2, Some(18446744073709551615u128));
+}
+
+#[test]
+fn check_simple() {
+    let mut map = VarMap::new();
+    map.set(Key::new(10000000), 1u8);
+    map.set(Key::new(20000000), 2u32);
+    map.set(Key::new(30000000), "Hello, world! ");
+    assert_eq!(map.get::<u8>(Key::new(10000000)), Some(1u8));
+    assert_eq!(map.get::<u32>(Key::new(20000000)), Some(2u32));
+    assert_eq!(map.get::<&str>(Key::new(30000000)), Some("Hello, world! "));
+    assert_eq!(map.contains(Key::new(10000000)), true);
+    assert_eq!(map.contains(Key::new(20000000)), true);
+    assert_eq!(map.contains(Key::new(30000000)), true);
+    assert_eq!(map.get::<u8>(Key::new(40000000)), None);
+    assert_eq!(map.contains(Key::new(40000000)), false);
 }

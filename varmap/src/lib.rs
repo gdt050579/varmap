@@ -1,7 +1,6 @@
 mod arena;
 mod value;
 mod mem_align;
-mod key;
 mod var_map;
 mod traits;
 mod types;
@@ -9,12 +8,10 @@ mod types;
 #[cfg(test)]
 mod tests;
 
-use arena::Arena;
-use arena::ArenaIndex;
-use value::ValueKind;
+pub(crate) use arena::{Arena, ArenaIndex};
+pub(crate) use traits::VarMapStoredValue;
+pub(crate) use value::ValueKind;
 
-
-pub use key::Key;
 pub use mem_align::MemAlign;
 pub use var_map::VarMap;
 pub use traits::VarMapValue;

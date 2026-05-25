@@ -2,6 +2,7 @@ use crate::*;
 
 impl VarMapValue for &str {
     type Decoded<'a> = &'a str;
+
     const TYPE_ID: i32 = 0;
 
     fn to_value<'a>(&self, builder: &'a mut ValueBuilder<'a>) -> Value<'a> {
@@ -19,15 +20,18 @@ impl VarMapValue for &str {
             )
         }
     }
+
     fn from_value<'a>(value: &'a Value<'a>) -> Option<&'a str> {
-        match value.kind() {
-            ValueKind::String(index) => {
-                if let Some(s) = value.arena().get(*index) {
-                    Some(unsafe { std::str::from_utf8_unchecked(s) })
-                } else {
-                    None
-                }
-            }
+        <Self as VarMapStoredValue>::from_stored(value.kind(), value.arena())
+    }
+}
+
+impl VarMapStoredValue for &str {
+    fn from_stored<'a>(kind: &'a ValueKind, arena: &'a Arena) -> Option<&'a str> {
+        match kind {
+            ValueKind::String(index) => arena
+                .get(*index)
+                .map(|s| unsafe { std::str::from_utf8_unchecked(s) }),
             ValueKind::SmallString(small_string, len) => {
                 Some(unsafe { std::str::from_utf8_unchecked(&small_string[..*len as usize]) })
             }
