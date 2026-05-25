@@ -117,3 +117,14 @@ fn check_simple() {
     let s: &str = map.get::<&str>(Key::new(40000000)).unwrap();
     assert_eq!(s, "Helo");
 }
+
+#[test]
+fn check_str_var_map() {
+    let mut map = StrVarMap::new();
+    map.set("var1", 1u8);
+    map.set("var2", 2u32);
+    map.set("var3", "Hello, world! ");
+    assert_eq!(map.get_u8("var1"), Some(1u8));
+    assert_eq!(map.get_u32("var2"), Some(2u32));
+    assert_eq!(map.get_str("var3"), Some("Hello, world! "));
+}

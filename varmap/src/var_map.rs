@@ -100,6 +100,7 @@ impl VarMap {
         get_i64  => i64,
         get_f32  => f32,
         get_f64  => f64,
+        get_str  => &str,
     }
 
     #[inline(always)]

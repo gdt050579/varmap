@@ -25,10 +25,10 @@ macro_rules! impl_getters {
     };
 }
 
-pub struct StringVarMap {
+pub struct StrVarMap {
     map: VarMap,
 }
-impl StringVarMap {
+impl StrVarMap {
     pub fn new() -> Self {
         Self { map: VarMap::new() }
     }
@@ -54,6 +54,7 @@ impl StringVarMap {
         get_i64  => i64,
         get_f32  => f32,
         get_f64  => f64,
+        get_str  => &str,
     }    
     pub fn contains(&self, var_name: &str) -> bool {
         self.map.contains(Key::new(fnv1a(var_name)))
