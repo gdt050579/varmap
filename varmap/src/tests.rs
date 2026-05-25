@@ -170,3 +170,10 @@ fn check_enum_var_map() {
     assert_eq!(map.contains(TestEnum::Var3), true);
     assert_eq!(map.get_bool(TestEnum::Var1), None);
 }
+
+#[test]
+fn check_sizes() {
+    assert_eq!(std::mem::size_of::<ValueKind>(), 16);
+    assert_eq!(std::mem::size_of::<Option<ValueKind>>(), 16);
+    assert_eq!(std::mem::size_of::<ArenaIndex>(), 8);
+}
