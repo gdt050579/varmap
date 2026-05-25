@@ -2,6 +2,7 @@ use crate::*;
 
 impl VarMapValue for &[u8] {
     type Decoded<'a> = &'a [u8];
+    const TYPE_ID: i32 = 0;
 
     fn to_value<'a>(&self, builder: &'a mut ValueBuilder<'a>) -> Value<'a> {
         if self.len() <= 14 {

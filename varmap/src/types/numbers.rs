@@ -4,6 +4,7 @@ macro_rules! impl_varmap_numeric {
         $(
             impl VarMapValue for $ty {
                 type Decoded<'a> = $ty;
+                const TYPE_ID: i32 = 0;
 
                 fn to_value<'a>(&self, builder: &'a mut ValueBuilder<'a>) -> Value<'a> {
                     Value::new(ValueKind::$variant(*self), builder.arena())
