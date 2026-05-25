@@ -15,6 +15,7 @@ pub(crate) use value::ValueKind;
 
 pub use mem_align::MemAlign;
 pub use var_map::VarMap;
+pub use var_map::Key;
 pub use str_var_map::StrVarMap;
 pub use traits::VarMapValue;
 pub use value::Value;

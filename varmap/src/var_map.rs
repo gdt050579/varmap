@@ -6,7 +6,7 @@ pub struct Key {
 }
 impl Key {
     #[inline(always)]
-    pub fn new(hash: u64) -> Self {
+    pub const fn new(hash: u64) -> Self {
         Self { hash }
     }
 }
