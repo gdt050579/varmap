@@ -47,6 +47,30 @@ impl TestTrait for VarMapCreateLarge {
     const DESCRIPTION: &'static str = "Update large strings in the VarMap";
 }
 
+
+pub struct EnumVarMapCreateLarge {
+    map: EnumVarMap<TestEnum>,
+}
+impl TestTrait for EnumVarMapCreateLarge {
+    fn init() -> Self {
+        Self {
+            map: EnumVarMap::new(),
+        }
+    }
+    fn run_test(&mut self, count: usize) {
+        for _ in 0..count {
+            self.map.clear();
+            for value in SMALL_SET {
+                self.map.set(value.enum_key, value.large_str_value);
+            }
+        }
+    }
+    
+    const NAME: &'static str = "EnumVarMap-Update-LargeStrings";
+    const DESCRIPTION: &'static str = "Update large strings in the EnumVarMap";
+}
+
+
 pub struct HashMapCreateLarge {
     map: HashMap<&'static str, String>,
 }

@@ -25,6 +25,7 @@ impl Entry {
 static ENTRIES: &[Entry] = &[
     Entry::new::<string_tests::StrVarMapCreateLarge>(),
     Entry::new::<string_tests::VarMapCreateLarge>(),
+    Entry::new::<string_tests::EnumVarMapCreateLarge>(),
     Entry::new::<string_tests::HashMapCreateLarge>(),
     Entry::new::<string_tests::BTreeMapCreateLarge>(),
     // Entry::new::<string_tests::StartsWith>(),
