@@ -11,3 +11,9 @@ pub trait VarMapValue {
 pub(crate) trait VarMapStoredValue: VarMapValue {
     fn from_stored<'a>(kind: &'a ValueKind, arena: &'a Arena) -> Option<Self::Decoded<'a>>;
 }
+
+pub trait EnumVarMapKey: Copy {
+    const INDEX_COUNT: u16;
+
+    fn to_index(self) -> u16;
+}

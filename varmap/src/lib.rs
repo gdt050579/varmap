@@ -3,6 +3,7 @@ mod value;
 mod mem_align;
 mod var_map;
 mod str_var_map;
+mod enum_var_map;
 mod traits;
 mod types;
 
@@ -18,6 +19,8 @@ pub use var_map::VarMap;
 pub use var_map::Key;
 pub use str_var_map::StrVarMap;
 pub use traits::VarMapValue;
+pub use traits::EnumVarMapKey;
 pub use value::Value;
 pub use value::ValueBuilder;
 pub use varmap_proc_macro::*;
+pub use enum_var_map::EnumVarMap;

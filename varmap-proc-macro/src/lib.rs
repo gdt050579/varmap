@@ -1,3 +1,4 @@
+mod derive;
 use proc_macro::*;
 use std::str::FromStr;
 extern crate proc_macro;
@@ -39,4 +40,13 @@ pub fn var(input: TokenStream) -> TokenStream {
     let hash = fnv1a(&string_param);
     TokenStream::from_str(format!("Key::new({})", hash).as_str())
         .expect("Fail to convert name! to stream")
+}
+
+
+#[proc_macro_derive(EnumVarMap)]
+pub fn derive_enum_var_map(input: TokenStream) -> TokenStream {
+    match derive::process_enum_var_map(input) {
+        Ok(ts) => ts,
+        Err(msg) => format!("compile_error!({:?});", msg).parse().unwrap(),
+    }
 }

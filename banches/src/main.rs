@@ -24,6 +24,9 @@ impl Entry {
 
 static ENTRIES: &[Entry] = &[
     Entry::new::<string_tests::StrVarMapCreateLarge>(),
+    Entry::new::<string_tests::VarMapCreateLarge>(),
+    Entry::new::<string_tests::HashMapCreateLarge>(),
+    Entry::new::<string_tests::BTreeMapCreateLarge>(),
     // Entry::new::<string_tests::StartsWith>(),
     // Entry::new::<string_tests::EndsWith>(),
     // Entry::new::<string_tests::Contains>(),
@@ -37,18 +40,17 @@ fn run<T: TestTrait>(count: usize, repeats: usize) {
     let after_init = AllocStats::now();
     let mut sum = 0u128;
     println!("Running test '{}' — {}", T::NAME, T::DESCRIPTION);
-    for i in 0..repeats {
-        print!("  [{}/{}] ", i + 1, repeats);
+    for _ in 0..repeats {
         std::io::Write::flush(&mut std::io::stdout()).ok();
         let start = Instant::now();
         let _: () = test.run_test(black_box(count));
         black_box(());
         let duration = start.elapsed();
-        println!("{} ms", duration.as_millis());
         sum += duration.as_millis();
     }
-    println!("  Average: {} ms\n", sum / repeats as u128);
-    println!("  Memory usage: {} bytes", after_init.bytes - before_init.bytes);
+    let after_run = AllocStats::now();
+    println!("  Average: {} ms", sum / repeats as u128);
+    println!("  Memory usage: Init = {} bytes, Run = {} bytes", after_init.bytes - before_init.bytes, after_run.bytes - after_init.bytes);
 }
 
 fn usage(prog: &str) {
