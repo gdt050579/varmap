@@ -78,3 +78,22 @@ fn check_value_f64() {
     check_type_value(-3.14f64, ValueKind::F64(-3.14f64));
 }
 
+#[test]
+fn check_value_i128() {
+    let mut arena = Arena::new();
+    let mut builder = ValueBuilder::new(&mut arena);
+    let value = 9223372036854775807i128.to_value(&mut builder);
+    assert_eq!(*value.kind(), ValueKind::I128(ArenaIndex::new(0, 16))); // first offset in the arena index
+    let value2 = i128::from_value(&value);
+    assert_eq!(value2, Some(9223372036854775807i128));
+}
+
+#[test]
+fn check_value_u128() {
+    let mut arena = Arena::new();
+    let mut builder = ValueBuilder::new(&mut arena);
+    let value = 18446744073709551615u128.to_value(&mut builder);
+    assert_eq!(*value.kind(), ValueKind::U128(ArenaIndex::new(0, 16))); // first offset in the arena index
+    let value2 = u128::from_value(&value);
+    assert_eq!(value2, Some(18446744073709551615u128));
+}

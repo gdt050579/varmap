@@ -5,6 +5,11 @@ pub(crate) struct ArenaIndex {
     offset: u32,
     size: u32,
 }
+impl ArenaIndex {
+    pub(crate) fn new(offset: u32, size: u32) -> Self {
+        Self { offset, size }
+    }
+}
 pub(crate) struct Arena {
     data: Vec<u128>,
     current_offset: usize,
@@ -28,10 +33,7 @@ impl Arena {
             std::ptr::copy_nonoverlapping(buf.as_ptr(), dst, buf.len());
         }
         self.current_offset = end;
-        ArenaIndex {
-            offset: start as u32,
-            size: buf.len() as u32,
-        }
+        ArenaIndex::new(start as u32, buf.len() as u32)
     }
     pub(crate) fn clear(&mut self) {
         self.current_offset = 0;
