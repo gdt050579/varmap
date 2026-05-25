@@ -8,15 +8,13 @@ use data::TestTrait;
 use tracking_allocator::AllocStats;
 
 pub struct Entry {
-    pub name:        &'static str,
-    pub description: &'static str,
-    pub run:         fn(count: usize, repeats: usize),
+    pub name: &'static str,
+    pub run:  fn(count: usize, repeats: usize),
 }
 impl Entry {
     const fn new<T: TestTrait>() -> Self {
         Self {
             name: T::NAME,
-            description: T::DESCRIPTION,
             run: |count, repeats| run::<T>(count, repeats),
         }
     }
@@ -28,10 +26,11 @@ static ENTRIES: &[Entry] = &[
     Entry::new::<string_tests::EnumVarMapCreateLarge>(),
     Entry::new::<string_tests::HashMapCreateLarge>(),
     Entry::new::<string_tests::BTreeMapCreateLarge>(),
-    // Entry::new::<string_tests::StartsWith>(),
-    // Entry::new::<string_tests::EndsWith>(),
-    // Entry::new::<string_tests::Contains>(),
-    // Entry::new::<globre_tests::GlobREMatch>(),
+    Entry::new::<string_tests::StrVarMapCreateSmall>(),
+    Entry::new::<string_tests::VarMapCreateSmall>(),
+    Entry::new::<string_tests::EnumVarMapCreateSmall>(),
+    Entry::new::<string_tests::HashMapCreateSmall>(),
+    Entry::new::<string_tests::BTreeMapCreateSmall>(),
 ];
 
 
@@ -40,7 +39,7 @@ fn run<T: TestTrait>(count: usize, repeats: usize) {
     let mut test = T::init();
     let after_init = AllocStats::now();
     let mut sum = 0u128;
-    println!("Running test '{}' — {}", T::NAME, T::DESCRIPTION);
+    println!("Running test '{}'", T::NAME);
     for _ in 0..repeats {
         std::io::Write::flush(&mut std::io::stdout()).ok();
         let start = Instant::now();
@@ -69,10 +68,8 @@ fn main() {
 
     match args[1].to_uppercase().as_str() {
         "LIST" => {
-            println!("{:<30}  DESCRIPTION", "NAME");
-            println!("{}", "─".repeat(72));
             for e in ENTRIES {
-                println!("{:<30}  {}", e.name, e.description);
+                println!("{}", e.name);
             }
         }
 
@@ -99,8 +96,7 @@ fn main() {
                 .iter()
                 .filter(|e| match &filter {
                     None => true,
-                    Some(q) => e.name.to_lowercase().contains(q.as_str())
-                           || e.description.to_lowercase().contains(q.as_str()),
+                    Some(q) => e.name.to_lowercase().contains(q.as_str()),
                 })
                 .collect();
 
