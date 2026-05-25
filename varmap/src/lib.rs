@@ -19,3 +19,4 @@ pub use str_var_map::StrVarMap;
 pub use traits::VarMapValue;
 pub use value::Value;
 pub use value::ValueBuilder;
+pub use varmap_proc_macro::*;

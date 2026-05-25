@@ -5,6 +5,7 @@ members = [
   "varmap",
   "tester",
   "banches",
+  "varmap-proc-macro",
 ]
 
 [workspace.lints.clippy]

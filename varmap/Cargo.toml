@@ -16,3 +16,6 @@ readme = "../README.md"
 name = "varmap"
 
 [features]
+
+[dependencies]
+varmap_proc_macro = { path = "../varmap-proc-macro" }

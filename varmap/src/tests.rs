@@ -136,3 +136,14 @@ fn check_get_bytes() {
     map.set("var1", bytes.as_slice());
     assert_eq!(map.get_bytes("var1"), Some(bytes.as_slice()));
 }
+
+#[test]
+fn check_var_map_var_proc_macro() {
+    let mut map = VarMap::new();
+    map.set(var!("var1"), 1u8);
+    map.set(var!("var2"), 2u32);
+    map.set(var!("var3"), "Hello, world! ");
+    assert_eq!(map.get_u8(var!("var1")), Some(1u8));
+    assert_eq!(map.get_u32(var!("var2")), Some(2u32));
+    assert_eq!(map.get_str(var!("var3")), Some("Hello, world! "));
+}
