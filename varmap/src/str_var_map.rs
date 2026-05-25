@@ -61,3 +61,9 @@ impl StrVarMap {
         self.map.contains(Key::new(fnv1a(var_name)))
     }
 }   
+
+impl Default for StrVarMap {
+    fn default() -> Self {
+        Self::new()
+    }
+}

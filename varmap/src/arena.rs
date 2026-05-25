@@ -24,7 +24,7 @@ impl Arena {
     pub(crate) fn store(&mut self, buf: &[u8], align: MemAlign) -> ArenaIndex {
         let start = align.align_offset(self.current_offset);
         let end = start + buf.len();
-        let data_len = (end + 15) / 16; // rotunjim la 16 bytes
+        let data_len = end.div_ceil(16); // rotunjim la 16 bytes
         if data_len > self.data.len() {
             self.data.resize(data_len, 0);
         }

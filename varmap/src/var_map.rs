@@ -59,7 +59,7 @@ impl VarMap {
     }
     pub fn set<T: VarMapValue>(&mut self, key: Key, value: T) {
         let mut builder = ValueBuilder::new(&mut self.arena);
-        let value_kind = value.to_value(&mut builder).kind().clone();
+        let value_kind = *value.to_value(&mut builder).kind();
         let hvalue = key.hash & Hash::HASH_MASK;
         let hash_index = self.hashes.partition_point(|h| h.hash() < hvalue);
 
@@ -109,5 +109,11 @@ impl VarMap {
         let hvalue = key.hash & Hash::HASH_MASK;
         let hash_index = self.hashes.partition_point(|h| h.hash() < hvalue);
         hash_index < self.hashes.len() && self.hashes[hash_index].hash() == hvalue
+    }
+}
+
+impl Default for VarMap {
+    fn default() -> Self {
+        Self::new()
     }
 }

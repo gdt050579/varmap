@@ -36,7 +36,7 @@ impl<E: EnumVarMapKey> EnumVarMap<E> {
     pub fn set<T: VarMapValue>(&mut self, key: E, value: T) {
         let index = key.to_index() as usize;
         let mut builder = ValueBuilder::new(&mut self.arena);
-        let value_kind = value.to_value(&mut builder).kind().clone();
+        let value_kind = *value.to_value(&mut builder).kind();
         self.values[index] = Some(value_kind);
     }
     #[allow(private_bounds)]
@@ -67,4 +67,10 @@ impl<E: EnumVarMapKey> EnumVarMap<E> {
         get_str  => &str,
         get_bytes => &[u8],
     }    
+}
+
+impl<E: EnumVarMapKey> Default for EnumVarMap<E> {
+    fn default() -> Self {
+        Self::new()
+    }
 }

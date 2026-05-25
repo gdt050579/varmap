@@ -11,10 +11,8 @@ pub(crate) fn process_enum_var_map(input: TokenStream) -> Result<TokenStream, St
             // Attribute: # [ ... ]
             TokenTree::Punct(p) if p.as_char() == '#' => {
                 if let Some(TokenTree::Group(g)) = tokens.get(i + 1) {
-                    if g.delimiter() == Delimiter::Bracket {
-                        if is_repr_u16(g.stream()) {
-                            has_repr_u16 = true;
-                        }
+                    if g.delimiter() == Delimiter::Bracket && is_repr_u16(g.stream()) {
+                            has_repr_u16 = true;                        
                     }
                 }
                 i += 2;
