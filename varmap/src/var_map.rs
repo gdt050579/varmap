@@ -84,10 +84,15 @@ impl VarMap {
     pub fn get<'a, V: VarMapStoredValue>(&'a self, key: Key) -> Option<V::Decoded<'a>> {
         let hvalue = key.hash & Hash::HASH_MASK;
         let hash_index = self.hashes.partition_point(|h| h.hash() < hvalue);
-        if hash_index < self.hashes.len() && self.hashes[hash_index].hash() == hvalue {
-            let value_index = self.hashes[hash_index].index();
-            let kind = &self.values[value_index];
-            V::from_stored(kind, &self.arena)
+
+        if let Some(h) = self.hashes.get(hash_index) {
+            if h.hash() == hvalue {
+                let value_index = h.index();
+                let kind = &self.values[value_index];
+                V::from_stored(kind, &self.arena)
+            } else {
+                None
+            }
         } else {
             None
         }
