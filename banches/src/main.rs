@@ -23,7 +23,7 @@ impl Entry {
 }
 
 static ENTRIES: &[Entry] = &[
-    // Entry::new::<string_tests::IsOneOf>(),
+    Entry::new::<string_tests::StrVarMapCreateLarge>(),
     // Entry::new::<string_tests::StartsWith>(),
     // Entry::new::<string_tests::EndsWith>(),
     // Entry::new::<string_tests::Contains>(),
@@ -52,7 +52,7 @@ fn run<T: TestTrait>(count: usize, repeats: usize) {
 }
 
 fn usage(prog: &str) {
-    eprintln!("Usage:\n{prog} LIST\n{prog} RUN <count> <repeats>\n{prog} RUN <count> <repeats> <search>\n\nExamples:\n{prog} LIST\n{prog} RUN 100 10\n{prog} RUN 100 10 isoneof");
+    eprintln!("Usage:\n{prog} LIST\n{prog} RUN <count> <repeats>\n{prog} RUN <count> <repeats> <search>\n\nExamples:\n{prog} LIST\n{prog} RUN 100 10\n{prog} RUN 100 10 strvarmap");
 }
 
 fn main() {
