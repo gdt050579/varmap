@@ -4,6 +4,7 @@ resolver = "2"
 members = [
   "varmap",
   "tester",
+  "banches",
 ]
 
 [workspace.lints.clippy]
