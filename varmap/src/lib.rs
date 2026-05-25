@@ -6,6 +6,9 @@ mod var_map;
 mod traits;
 mod types;
 
+#[cfg(test)]
+mod tests;
+
 use arena::Arena;
 use arena::ArenaIndex;
 use value::ValueKind;

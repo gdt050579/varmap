@@ -1,0 +1,80 @@
+use crate::*;
+use std::fmt::Debug;
+
+fn check_type_value<T>(obj: T, kind: ValueKind)
+where
+    T: Sized + Copy + PartialEq + Debug + for<'a> VarMapValue<Decoded<'a> = T>,
+{
+    let mut arena = Arena::new();
+    let mut builder = ValueBuilder::new(&mut arena);
+    let value = obj.to_value(&mut builder);
+    assert_eq!(*value.kind(), kind);
+    let value2 = T::from_value(&value);
+    assert_eq!(value2, Some(obj));
+}
+#[test]
+fn check_value_bool() {
+    check_type_value(true, ValueKind::Bool(true));
+    check_type_value(false, ValueKind::Bool(false));
+}
+
+#[test]
+fn check_value_i8() {
+    check_type_value(127i8, ValueKind::I8(127));
+    check_type_value(-128i8, ValueKind::I8(-128));
+}
+
+#[test]
+fn check_value_u8() {
+    check_type_value(255u8, ValueKind::U8(255));
+    check_type_value(0u8, ValueKind::U8(0));
+}
+
+#[test]
+fn check_value_i16() {
+    check_type_value(32767i16, ValueKind::I16(32767));
+    check_type_value(-32768i16, ValueKind::I16(-32768));
+}
+
+#[test]
+fn check_value_u16() {
+    check_type_value(65535u16, ValueKind::U16(65535));
+    check_type_value(0u16, ValueKind::U16(0));
+}
+
+#[test]
+fn check_value_i32() {
+    check_type_value(2147483647i32, ValueKind::I32(2147483647));
+    check_type_value(-2147483648i32, ValueKind::I32(-2147483648));
+}
+
+#[test]
+fn check_value_u32() {
+    check_type_value(4294967295u32, ValueKind::U32(4294967295));
+    check_type_value(0u32, ValueKind::U32(0));
+}
+
+#[test]
+fn check_value_i64() {
+    check_type_value(9223372036854775807i64, ValueKind::I64(9223372036854775807));
+    check_type_value(-9223372036854775808i64, ValueKind::I64(-9223372036854775808));
+}
+
+#[test]
+fn check_value_u64() {
+    check_type_value(18446744073709551615u64, ValueKind::U64(18446744073709551615));
+    check_type_value(0u64, ValueKind::U64(0));
+}
+
+#[test]
+fn check_value_f32() {
+    check_type_value(3.14f32, ValueKind::F32(3.14f32));
+    check_type_value(-3.14f32, ValueKind::F32(-3.14f32));
+}
+
+#[test]
+fn check_value_f64() {
+    check_type_value(3.14f64, ValueKind::F64(3.14f64));
+    check_type_value(-3.14f64, ValueKind::F64(-3.14f64));
+}
+

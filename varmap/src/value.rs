@@ -1,6 +1,6 @@
 use crate::{Arena, ArenaIndex};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) enum ValueKind {
     Bool(bool),
     I8(i8),
