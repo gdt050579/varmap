@@ -147,3 +147,26 @@ fn check_var_map_var_proc_macro() {
     assert_eq!(map.get_u32(var!("var2")), Some(2u32));
     assert_eq!(map.get_str(var!("var3")), Some("Hello, world! "));
 }
+
+#[derive(EnumVarMap,Copy,Clone,Debug)]
+#[repr(u16)]
+enum TestEnum {
+    Var1,
+    Var2,
+    Var3,
+}
+
+#[test]
+fn check_enum_var_map() {
+    let mut map = EnumVarMap::<TestEnum>::new();
+    map.set(TestEnum::Var1, 1u8);
+    map.set(TestEnum::Var2, 2u32);
+    map.set(TestEnum::Var3, "Hello, world! ");  
+    assert_eq!(map.get_u8(TestEnum::Var1), Some(1u8));
+    assert_eq!(map.get_u32(TestEnum::Var2), Some(2u32));
+    assert_eq!(map.get_str(TestEnum::Var3), Some("Hello, world! "));
+    assert_eq!(map.contains(TestEnum::Var1), true);
+    assert_eq!(map.contains(TestEnum::Var2), true);
+    assert_eq!(map.contains(TestEnum::Var3), true);
+    assert_eq!(map.get_bool(TestEnum::Var1), None);
+}

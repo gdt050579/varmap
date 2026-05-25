@@ -78,7 +78,7 @@ pub(crate) fn process_enum_var_map(input: TokenStream) -> Result<TokenStream, St
 
     let out = format!(
         r#"
-        impl ::varmap::EnumVarMapKey for {name} {{
+        impl EnumVarMapKey for {name} {{
             const INDEX_COUNT: u16 = {count};
 
             #[inline(always)]
