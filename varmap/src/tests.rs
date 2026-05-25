@@ -113,4 +113,7 @@ fn check_simple() {
     assert_eq!(map.contains(Key::new(30000000)), true);
     assert_eq!(map.get::<u8>(Key::new(40000000)), None);
     assert_eq!(map.contains(Key::new(40000000)), false);
+    map.set(Key::new(40000000),"Helo");
+    let s: &str = map.get::<&str>(Key::new(40000000)).unwrap();
+    assert_eq!(s, "Helo");
 }
