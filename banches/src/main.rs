@@ -31,6 +31,17 @@ static ENTRIES: &[Entry] = &[
     Entry::new::<string_tests::EnumVarMapCreateSmall>(),
     Entry::new::<string_tests::HashMapCreateSmall>(),
     Entry::new::<string_tests::BTreeMapCreateSmall>(),
+    // ============================== READ TEST CASES ==============================
+    Entry::new::<string_tests::StrVarMapReadLarge>(),
+    Entry::new::<string_tests::VarMapReadLarge>(),
+    Entry::new::<string_tests::EnumVarMapReadLarge>(),
+    Entry::new::<string_tests::HashMapReadLarge>(),
+    Entry::new::<string_tests::BTreeMapReadLarge>(),
+    Entry::new::<string_tests::StrVarMapReadSmall>(),
+    Entry::new::<string_tests::VarMapReadSmall>(),
+    Entry::new::<string_tests::EnumVarMapReadSmall>(),
+    Entry::new::<string_tests::HashMapReadSmall>(),
+    Entry::new::<string_tests::BTreeMapReadSmall>(),
 ];
 
 
@@ -39,7 +50,7 @@ fn run<T: TestTrait>(count: usize, repeats: usize) {
     let mut test = T::init();
     let after_init = AllocStats::now();
     let mut sum = 0u128;
-    println!("Running test '{}'", T::NAME);
+    // println!("Running test '{}'", T::NAME);
     for _ in 0..repeats {
         std::io::Write::flush(&mut std::io::stdout()).ok();
         let start = Instant::now();
@@ -49,8 +60,11 @@ fn run<T: TestTrait>(count: usize, repeats: usize) {
         sum += duration.as_millis();
     }
     let after_run = AllocStats::now();
-    println!("  Average: {} ms", sum / repeats as u128);
-    println!("  Memory usage: Init = {} bytes, Run = {} bytes", after_init.bytes - before_init.bytes, after_run.bytes - after_init.bytes);
+    // println!("  Average: {} ms", sum / repeats as u128);
+    // println!("  Memory usage: Init = {} bytes, Run = {} bytes", after_init.bytes - before_init.bytes, after_run.bytes - after_init.bytes);
+    let algo =  T::NAME.split('-').next().unwrap();
+    let test_name = &T::NAME[algo.len()+1..];
+    println!("{:<12} | {:<20} | {:>10} ms | {:>10} bytes | {:>10} bytes |", algo, test_name, sum / repeats as u128, after_init.bytes - before_init.bytes, after_run.bytes - after_init.bytes);
 }
 
 fn usage(prog: &str) {
