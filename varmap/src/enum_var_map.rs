@@ -29,8 +29,7 @@ impl<E: EnumVarMapKey> EnumVarMap<E> {
     }
     pub fn clear(&mut self) {
         self.arena.clear();
-        self.values.clear();
-        self.values.resize(E::INDEX_COUNT as usize, None);
+        self.values.iter_mut().for_each(|v| *v = None);        
     }
     #[inline(always)]
     pub fn set<T: VarMapValue>(&mut self, key: E, value: T) {

@@ -63,18 +63,22 @@ impl VarMap {
         let hvalue = key.hash & Hash::HASH_MASK;
         let hash_index = self.hashes.partition_point(|h| h.hash() < hvalue);
 
-        if hash_index < self.hashes.len() && self.hashes[hash_index].hash() == hvalue {
-            // overwrite existing value
-            let value_index = self.hashes[hash_index].index();
-            self.values[value_index] = value_kind;
-        } else {
-            debug_assert!(self.values.len() < u16::MAX as usize, "Maximum 64k values/keys are supported !");
-            // insert new value
-            let value_index = self.values.len() as u16;
-            self.values.push(value_kind);
-            let hash = Hash { data: hvalue | value_index as u64 };
-            self.hashes.insert(hash_index, hash);
+        if let Some(h) = self.hashes.get(hash_index) {
+            if h.hash() == hvalue {
+                // overwrite existing value
+                let value_index = h.index();
+                self.values[value_index] = value_kind;
+                return;
+            }
         }
+        debug_assert!(self.values.len() < u16::MAX as usize, "Maximum 64k values/keys are supported !");
+        // insert new value
+        let value_index = self.values.len() as u16;
+        self.values.push(value_kind);
+        let hash = Hash {
+            data: hvalue | value_index as u64,
+        };
+        self.hashes.insert(hash_index, hash);
     }
     #[allow(private_bounds)]
     pub fn get<'a, V: VarMapStoredValue>(&'a self, key: Key) -> Option<V::Decoded<'a>> {
