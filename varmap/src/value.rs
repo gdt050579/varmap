@@ -13,6 +13,8 @@ pub(crate) enum ValueKind {
     U64(u64),
     F32(f32),
     F64(f64),
+    I128(ArenaIndex),
+    U128(ArenaIndex),
     SmallString([u8; 14], u8),
     String(ArenaIndex),
     SmallBytes([u8; 14], u8),
