@@ -10,6 +10,21 @@ Three map types share the same value encoding and getter API, but differ in how 
 | [`StrVarMap`](#strvarmap)   | `&str` (FNV-1a hash at runtime)        | Keys come from user input or config at runtime  |
 | [`EnumVarMap`](#enumvarmap) | Enum variant (`#[derive(EnumVarMap)]`) | Fixed, closed set of keys known at compile time |
 
+## Usage model
+
+VarMap is aimed at **write once, read many** workloads: you populate keys (configuration, request context, parsed attributes) and then read them repeatedly with cheap typed getters and borrowed `&str` / `&[u8]` results.
+
+The internal arena is **append-only**. Calling `set` on an existing key updates the map entry, but any previous arena allocation for that key is **not** reclaimed. Each overwrite of an arena-backed value (strings and byte slices longer than 14 bytes, `i128` / `u128`, `Ipv6Addr`, custom types, etc.) adds new arena space while the old payload remains until the whole map is reset. Scalars and short strings (≤14 bytes) live entirely in the fixed 16-byte cell, so overwriting those does not grow the arena.
+
+| Pattern                                                            | Suitability                                                                |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| Set each key once, then many reads                                 | Ideal                                                                      |
+| Occasional updates to a few keys                                   | Fine                                                                       |
+| Frequent updates to the same keys with large / arena-backed values | Poor — arena memory grows; prefer `clear()` and repopulate, or another map |
+| Hot loop re-assigning every key every tick                         | Poor — use `clear()` between logical snapshots, or avoid varmap            |
+
+Use [`clear()`](#other-operations) when you need a fresh binding of all keys (for example between requests or benchmark iterations). That resets the arena as well as the key table. It also preserves the alocated arena space for future writes.
+
 ## Installation
 
 Add to your `Cargo.toml`:
@@ -190,7 +205,9 @@ EnumVarMap      VarMap + var!
 
 ## Performance
 
-Benchmarks live in the `banches` crate. Each run performs **10 000** outer iterations; each iteration clears the map and writes (or, for read tests, reads) **256** string keys. Results below are averaged over repeated runs; columns are **time**, **allocation during init**, and **allocation during the timed loop** (via a tracking allocator).
+Benchmarks live in the `banches` crate. They reflect the intended **read-heavy** pattern: each run performs **10 000** outer iterations over **256** string keys. **Update** tests call `clear()` at the start of every iteration, then write all keys once (so arena growth from repeated overwrites is not measured). **Read** tests populate the map once, then only read in the timed loop — matching write-once, read-many usage.
+
+Results below are averaged over repeated runs; columns are **time**, **allocation during init**, and **allocation during the timed loop** (via a tracking allocator).
 
 | Implementation | Scenario               |   Time | Init alloc | Run alloc |
 | -------------- | ---------------------- | -----: | ---------: | --------: |
@@ -219,11 +236,12 @@ Benchmarks live in the `banches` crate. Each run performs **10 000** outer ite
 
 ### Takeaways
 
-1. **`EnumVarMap` is fastest** for this workload: direct indexing avoids hash tables and, for `VarMap`/`StrVarMap`, sorted hash-vector lookup. Read-heavy paths show the largest gap (e.g. 10 ms vs 35–54 ms for small strings).
-2. **`VarMap` beats `StrVarMap`** by roughly 15–20% because `var!` removes runtime FNV-1a over key names.
-3. **All three varmap types beat `HashMap` and `BTreeMap`** on updates (roughly 2–11× faster than `BTreeMap`). Reads are competitive with or faster than `HashMap`, especially for `EnumVarMap` and `VarMap`.
-4. **`EnumVarMap` trades memory for speed**: ~4 KiB upfront per 256-key enum (empty slots), but **zero** run-time allocation on small-string read/update tests once initialized.
-5. **Inline small strings** reduce arena churn: `EnumVarMap` reports 0 bytes allocated during small-string update loops.
+1. **Read benchmarks are the sweet spot** (populate once, read many): `EnumVarMap` leads by a wide margin (e.g. 10 ms vs 35–54 ms for small strings on read).
+2. **`EnumVarMap` is fastest** overall: direct indexing avoids hash tables and, for `VarMap`/`StrVarMap`, sorted hash-vector lookup.
+3. **`VarMap` beats `StrVarMap`** by roughly 15–20% because `var!` removes runtime FNV-1a over key names.
+4. **All three varmap types beat `HashMap` and `BTreeMap`** on the measured workloads. Update numbers assume `clear()` per iteration; sustained in-place overwrites without `clear()` would allocate more because of the append-only arena.
+5. **`EnumVarMap` trades memory for speed**: ~4 KiB upfront per 256-key enum (empty slots), but **zero** run-time allocation on small-string read/update tests once initialized.
+6. **Inline small strings** (≤14 bytes) avoid arena use: `EnumVarMap` reports 0 bytes allocated during small-string update loops.
 
 Reproduce locally from the workspace root:
 
