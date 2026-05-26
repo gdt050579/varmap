@@ -5,6 +5,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 macro_rules! impl_getters {
     ($($name:ident => $ty:ty),* $(,)?) => {
         $(
+            #[doc = concat!("Returns the value as `", stringify!($ty), "`. See [`Self::get`].")]
             #[inline(always)]
             pub fn $name(&self, key: E) -> Option<$ty> {
                 self.get::<$ty>(key)
@@ -13,12 +14,19 @@ macro_rules! impl_getters {
     };
 }
 
+/// Heterogeneous map keyed by an enum implementing [`EnumVarMapKey`].
+///
+/// Each variant has a fixed slot for **O(1)** access without hashing. One slot per variant is
+/// reserved at creation (`E::INDEX_COUNT`). See the [crate-level documentation](crate) for usage
+/// guidance.
 pub struct EnumVarMap<E: EnumVarMapKey> {
     arena: Arena,
     values: Vec<Option<ValueKind>>,
     phantom: PhantomData<E>,
 }
+
 impl<E: EnumVarMapKey> EnumVarMap<E> {
+    /// Creates a map with one empty slot per enum variant.
     pub fn new() -> Self {
         let mut values = Vec::with_capacity(E::INDEX_COUNT as usize);
         values.resize(E::INDEX_COUNT as usize, None);
@@ -28,10 +36,16 @@ impl<E: EnumVarMapKey> EnumVarMap<E> {
             phantom: PhantomData,
         }
     }
+
+    /// Clears every slot and resets the arena offset.
+    ///
+    /// Slot vector capacity is unchanged; retained arena capacity may be reused.
     pub fn clear(&mut self) {
         self.arena.clear();
-        self.values.iter_mut().for_each(|v| *v = None);        
+        self.values.iter_mut().for_each(|v| *v = None);
     }
+
+    /// Stores `value` in the slot for `key`.
     #[inline(always)]
     pub fn set<T: VarMapValue>(&mut self, key: E, value: T) {
         let index = key.to_index() as usize;
@@ -39,6 +53,10 @@ impl<E: EnumVarMapKey> EnumVarMap<E> {
         let value_kind = *value.to_value(&mut builder).kind();
         self.values[index] = Some(value_kind);
     }
+
+    /// Returns the value for `key` decoded as `V`.
+    ///
+    /// Returns `None` if the slot is empty or the stored type does not match `V`.
     #[allow(private_bounds)]
     #[inline(always)]
     pub fn get<'a, V: VarMapValue>(&'a self, key: E) -> Option<V::Decoded<'a>>
@@ -49,6 +67,8 @@ impl<E: EnumVarMapKey> EnumVarMap<E> {
         let kind = self.values[index].as_ref()?;
         V::from_stored(kind, &self.arena)
     }
+
+    /// Returns `true` if the slot for `key` has been set.
     #[inline(always)]
     pub fn contains(&self, key: E) -> bool {
         let index = key.to_index() as usize;
@@ -72,8 +92,8 @@ impl<E: EnumVarMapKey> EnumVarMap<E> {
         get_char => char,
         get_ip => IpAddr,
         get_ipv4 => Ipv4Addr,
-        get_ipv6 => Ipv6Addr,        
-    }    
+        get_ipv6 => Ipv6Addr,
+    }
 }
 
 impl<E: EnumVarMapKey> Default for EnumVarMap<E> {

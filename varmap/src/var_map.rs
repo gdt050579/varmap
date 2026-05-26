@@ -1,11 +1,16 @@
 use crate::*;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
+/// Opaque key for [`VarMap`], holding a 64-bit hash.
+///
+/// Construct with [`Key::new`] or the [`var!`] macro (FNV-1a of a string literal).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Key {
     pub(crate) hash: u64,
 }
+
 impl Key {
+    /// Creates a key from a precomputed 64-bit hash.
     #[inline(always)]
     pub const fn new(hash: u64) -> Self {
         Self { hash }
@@ -16,6 +21,7 @@ impl Key {
 struct Hash {
     data: u64,
 }
+
 impl Hash {
     const HASH_MASK: u64 = 0xFFFF_FFFF_FFFF_0000;
     const INDEX_MASK: u64 = 0x0000_0000_0000_FFFF;
@@ -32,6 +38,7 @@ impl Hash {
 macro_rules! impl_getters {
     ($($name:ident => $ty:ty),* $(,)?) => {
         $(
+            #[doc = concat!("Returns the value as `", stringify!($ty), "`. See [`Self::get`].")]
             #[inline(always)]
             pub fn $name(&self, key: Key) -> Option<$ty> {
                 self.get::<$ty>(key)
@@ -40,12 +47,18 @@ macro_rules! impl_getters {
     };
 }
 
+/// Heterogeneous map keyed by [`Key`].
+///
+/// Optimized for compile-time key names via [`var!`]. Supports at most **65 536** distinct keys.
+/// See the [crate-level documentation](crate) for the intended write-once-read-many usage model.
 pub struct VarMap {
     arena: Arena,
     hashes: Vec<Hash>,
     values: Vec<ValueKind>,
 }
+
 impl VarMap {
+    /// Creates an empty map.
     pub fn new() -> Self {
         Self {
             arena: Arena::new(),
@@ -53,11 +66,20 @@ impl VarMap {
             values: Vec::new(),
         }
     }
+
+    /// Removes all keys and resets the arena offset.
+    ///
+    /// Clears the hash table and value list; retained heap capacity may be reused on later inserts.
     pub fn clear(&mut self) {
         self.arena.clear();
         self.hashes.clear();
         self.values.clear();
     }
+
+    /// Inserts or overwrites `key` with `value`.
+    ///
+    /// Overwriting a key does not reclaim arena memory from the previous value. See the
+    /// [crate-level documentation](crate) for details.
     pub fn set<T: VarMapValue>(&mut self, key: Key, value: T) {
         let mut builder = ValueBuilder::new(&mut self.arena);
         let value_kind = *value.to_value(&mut builder).kind();
@@ -81,6 +103,10 @@ impl VarMap {
         };
         self.hashes.insert(hash_index, hash);
     }
+
+    /// Returns the value for `key` decoded as `V`.
+    ///
+    /// Returns `None` if `key` is missing or the stored type does not match `V`.
     #[allow(private_bounds)]
     pub fn get<'a, V: VarMapValue>(&'a self, key: Key) -> Option<V::Decoded<'a>>
     where
@@ -101,6 +127,7 @@ impl VarMap {
             None
         }
     }
+
     impl_getters! {
         get_bool => bool,
         get_u8   => u8,
@@ -121,6 +148,7 @@ impl VarMap {
         get_ipv6 => Ipv6Addr,
     }
 
+    /// Returns `true` if `key` has a value (any type).
     #[inline(always)]
     pub fn contains(&self, key: Key) -> bool {
         let hvalue = key.hash & Hash::HASH_MASK;

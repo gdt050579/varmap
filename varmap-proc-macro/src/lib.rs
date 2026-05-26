@@ -1,3 +1,8 @@
+//! Proc-macros for the [`varmap`](https://docs.rs/varmap) crate.
+//!
+//! Re-exported from `varmap` as [`var`](var), [`EnumVarMap`](EnumVarMap), and
+//! [`VarMapValue`](VarMapValue).
+
 mod derive;
 mod copy_types;
 use proc_macro::*;
@@ -17,6 +22,23 @@ const fn fnv1a(s: &str) -> u64 {
     hash
 }
 
+/// Expands a string literal to `varmap::Key::new(<fnv1a hash>)`.
+///
+/// Use with [`VarMap`](https://docs.rs/varmap/latest/varmap/struct.VarMap.html) for
+/// compile-time key names without runtime hashing.
+///
+/// # Panics
+///
+/// Panics at compile time if the argument is not exactly one non-empty string literal.
+///
+/// # Example
+///
+/// ```ignore
+/// use varmap::{VarMap, var};
+///
+/// let mut map = VarMap::new();
+/// map.set(var!("app.port"), 443u16);
+/// ```
 #[proc_macro]
 pub fn var(input: TokenStream) -> TokenStream {
     let mut tokens = input.into_iter().peekable();
@@ -43,7 +65,14 @@ pub fn var(input: TokenStream) -> TokenStream {
         .expect("Fail to convert name! to stream")
 }
 
-
+/// Derives [`EnumVarMapKey`](https://docs.rs/varmap/latest/varmap/trait.EnumVarMapKey.html)
+/// for a unit enum.
+///
+/// # Requirements
+///
+/// - `#[repr(u16)]` on the enum
+/// - Unit variants only (no fields, no explicit discriminants)
+/// - At most 65 536 variants
 #[proc_macro_derive(EnumVarMap)]
 pub fn derive_enum_var_map(input: TokenStream) -> TokenStream {
     match derive::process_enum_var_map(input) {
@@ -52,6 +81,13 @@ pub fn derive_enum_var_map(input: TokenStream) -> TokenStream {
     }
 }
 
+/// Derives [`VarMapValue`](https://docs.rs/varmap/latest/varmap/trait.VarMapValue.html)
+/// for a `Copy` struct or enum.
+///
+/// # Requirements
+///
+/// - `Copy` type without generic parameters
+/// - Alignment between 1 and 16 bytes
 #[proc_macro_derive(VarMapValue)]
 pub fn derive_varmap_value(input: TokenStream) -> TokenStream {
     match copy_types::generate_implementation(input) {
