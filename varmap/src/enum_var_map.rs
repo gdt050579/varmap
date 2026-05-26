@@ -1,5 +1,6 @@
 use crate::*;
 use std::marker::PhantomData;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
 macro_rules! impl_getters {
     ($($name:ident => $ty:ty),* $(,)?) => {
@@ -68,6 +69,10 @@ impl<E: EnumVarMapKey> EnumVarMap<E> {
         get_f64  => f64,
         get_str  => &str,
         get_bytes => &[u8],
+        get_char => char,
+        get_ip => IpAddr,
+        get_ipv4 => Ipv4Addr,
+        get_ipv6 => Ipv6Addr,        
     }    
 }
 

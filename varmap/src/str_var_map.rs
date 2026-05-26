@@ -1,3 +1,5 @@
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+
 use crate::*;
 use crate::var_map::Key;
 
@@ -59,6 +61,10 @@ impl StrVarMap {
         get_f64  => f64,
         get_str  => &str,
         get_bytes => &[u8],
+        get_char => char,
+        get_ip => IpAddr,
+        get_ipv4 => Ipv4Addr,
+        get_ipv6 => Ipv6Addr,        
     }    
     pub fn contains(&self, var_name: &str) -> bool {
         self.map.contains(Key::new(fnv1a(var_name)))

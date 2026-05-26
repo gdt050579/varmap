@@ -1,3 +1,4 @@
+use std::net::Ipv4Addr;
 use crate::{Arena, ArenaIndex, MemAlign, VarMapValue};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -15,6 +16,10 @@ pub(crate) enum ValueKind {
     F64(f64),
     I128(ArenaIndex),
     U128(ArenaIndex),
+    Char(char),
+    Ip(ArenaIndex),
+    IpV4(Ipv4Addr),
+    Ipv6(ArenaIndex),
     SmallString([u8; 14], u8),
     String(ArenaIndex),
     SmallBytes([u8; 14], u8),

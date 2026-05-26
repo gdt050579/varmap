@@ -1,6 +1,7 @@
 use crate::*;
 use crate::var_map::Key;
 use std::fmt::Debug;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
 fn check_type_value<T>(obj: T, kind: ValueKind)
 where
@@ -193,4 +194,42 @@ fn check_custom_type() {
     m.set("my_type", obj);
     let obj2 = m.get::<MyType>("my_type").unwrap();
     assert_eq!(obj, *obj2);
+}
+
+#[test]
+fn check_char() {
+    let mut m = StrVarMap::new();
+    m.set("char", 'a');
+    assert_eq!(m.get_char("char"), Some('a'));
+}
+
+#[test]
+fn check_ip_addr() {
+    let mut m = StrVarMap::new();
+    m.set("ip_addr", IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)));
+    assert_eq!(m.get_ip("ip_addr"), Some(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1))));
+}
+#[test]
+fn check_ipv4_addr() {
+    let mut m = StrVarMap::new();
+    m.set("ipv4_addr", Ipv4Addr::new(127, 0, 0, 1));
+    assert_eq!(m.get_ipv4("ipv4_addr"), Some(Ipv4Addr::new(127, 0, 0, 1)));
+}
+#[test]
+fn check_ipv6_addr() {
+    let mut m = StrVarMap::new();
+    m.set("ipv6_addr", Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1));
+    assert_eq!(m.get_ipv6("ipv6_addr"), Some(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1)));
+}
+#[test]
+fn check_ip_addr_str_var_map() {
+    let mut m = StrVarMap::new();
+    m.set("ip_addr", IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)));
+    assert_eq!(m.get_ip("ip_addr"), Some(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1))));
+}
+#[test]
+fn check_ipv4_addr_str_var_map() {
+    let mut m = StrVarMap::new();
+    m.set("ipv4_addr", Ipv4Addr::new(127, 0, 0, 1));
+    assert_eq!(m.get_ipv4("ipv4_addr"), Some(Ipv4Addr::new(127, 0, 0, 1)));
 }
