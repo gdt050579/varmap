@@ -39,7 +39,10 @@ impl StrVarMap {
         self.map.set(Key::new(fnv1a(var_name)), value);
     }
     #[allow(private_bounds)]
-    pub fn get<'a, V: VarMapStoredValue>(&'a self, var_name: &str) -> Option<V::Decoded<'a>> {
+    pub fn get<'a, V: VarMapValue>(&'a self, var_name: &str) -> Option<V::Decoded<'a>>
+    where
+        V: VarMapStoredValue,
+    {
         self.map.get::<V>(Key::new(fnv1a(var_name)))
     }
     impl_getters! {

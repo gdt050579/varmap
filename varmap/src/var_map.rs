@@ -81,7 +81,10 @@ impl VarMap {
         self.hashes.insert(hash_index, hash);
     }
     #[allow(private_bounds)]
-    pub fn get<'a, V: VarMapStoredValue>(&'a self, key: Key) -> Option<V::Decoded<'a>> {
+    pub fn get<'a, V: VarMapValue>(&'a self, key: Key) -> Option<V::Decoded<'a>>
+    where
+        V: VarMapStoredValue,
+    {
         let hvalue = key.hash & Hash::HASH_MASK;
         let hash_index = self.hashes.partition_point(|h| h.hash() < hvalue);
 

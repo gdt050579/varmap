@@ -19,6 +19,8 @@ pub use var_map::VarMap;
 pub use var_map::Key;
 pub use str_var_map::StrVarMap;
 pub use traits::VarMapValue;
+#[doc(hidden)]
+pub use traits::VarMapCustomValue;
 pub use traits::EnumVarMapKey;
 pub use value::Value;
 pub use value::ValueBuilder;

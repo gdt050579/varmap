@@ -40,10 +40,13 @@ impl<E: EnumVarMapKey> EnumVarMap<E> {
     }
     #[allow(private_bounds)]
     #[inline(always)]
-    pub fn get<'a, V: VarMapStoredValue>(&'a self, key: E) -> Option<V::Decoded<'a>> {
+    pub fn get<'a, V: VarMapValue>(&'a self, key: E) -> Option<V::Decoded<'a>>
+    where
+        V: VarMapStoredValue,
+    {
         let index = key.to_index() as usize;
         let kind = self.values[index].as_ref()?;
-        V::from_stored(kind, &self.arena)        
+        V::from_stored(kind, &self.arena)
     }
     #[inline(always)]
     pub fn contains(&self, key: E) -> bool {
