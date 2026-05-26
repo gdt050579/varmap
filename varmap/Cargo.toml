@@ -4,13 +4,13 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Gavrilut Dragos <gavrilut.dragos@gmail.com>"]
 license = "MIT"
-description = ""
+description = "Fast, heterogeneous key–value maps for Rust. Store mixed types (integers, strings, bytes, custom structs) under a single key namespace, with compile-time keys, runtime strings, or enum variants. Arena-backed for zero-copy reads of strings and byte slices."
 repository = "https://github.com/gdt050579/varmap"
-homepage = "https://gdt050579.github.io/varmap/"
+homepage = "https://github.com/gdt050579/varmap"
 documentation = "https://docs.rs/varmap"
 readme = "../README.md"
-#keywords = ["filtering", "predicate", "rules", "expression", "query"]
-#categories = ["data-structures", "parser-implementations", "algorithms"]
+keywords = ["map", "kv", "arena", "heterogeneous", "fnv"]
+categories = ["data-structures", "caching", "algorithms"]
 
 [lib]
 name = "varmap"
@@ -18,4 +18,5 @@ name = "varmap"
 [features]
 
 [dependencies]
-varmap_proc_macro = { path = "../varmap-proc-macro" }
+# varmap_proc_macro = { path = "../varmap-proc-macro" }
+varmap_proc_macro = "0.1.0"
