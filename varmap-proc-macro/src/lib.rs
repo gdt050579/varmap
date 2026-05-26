@@ -1,4 +1,5 @@
 mod derive;
+mod copy_types;
 use proc_macro::*;
 use std::str::FromStr;
 extern crate proc_macro;
@@ -46,6 +47,14 @@ pub fn var(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(EnumVarMap)]
 pub fn derive_enum_var_map(input: TokenStream) -> TokenStream {
     match derive::process_enum_var_map(input) {
+        Ok(ts) => ts,
+        Err(msg) => format!("compile_error!({:?});", msg).parse().unwrap(),
+    }
+}
+
+#[proc_macro_derive(VarMapValue)]
+pub fn derive_varmap_value(input: TokenStream) -> TokenStream {
+    match copy_types::generate_implementation(input) {
         Ok(ts) => ts,
         Err(msg) => format!("compile_error!({:?});", msg).parse().unwrap(),
     }

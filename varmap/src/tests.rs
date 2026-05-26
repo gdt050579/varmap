@@ -177,3 +177,20 @@ fn check_sizes() {
     assert_eq!(std::mem::size_of::<Option<ValueKind>>(), 16);
     assert_eq!(std::mem::size_of::<ArenaIndex>(), 8);
 }
+
+#[derive(VarMapValue, Copy, Clone, Eq, PartialEq, Debug)]
+struct MyType {
+    a: i32,
+    b: u32,
+    c: u128,
+    d: i128,
+    e: [u8;3]
+}
+#[test]
+fn check_custom_type() {
+    let mut m = StrVarMap::new();
+    let obj = MyType { a: 0, b: 1, c: 2, d: 3, e: [0,1,2]};
+    m.set("my_type", obj);
+    let obj2 = m.get::<MyType>("my_type").unwrap();
+    assert_eq!(obj, *obj2);
+}

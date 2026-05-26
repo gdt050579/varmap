@@ -1,4 +1,4 @@
-use crate::{Arena, ArenaIndex};
+use crate::{Arena, ArenaIndex, MemAlign, VarMapValue};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) enum ValueKind {
@@ -40,6 +40,22 @@ impl<'a> Value<'a> {
     pub(crate) fn arena(&self) -> &Arena {
         self.arena
     }
+    pub fn as_bytes<T: VarMapValue>(&self) -> Option<&[u8]> {
+        match self.kind {
+            ValueKind::Custom(arena_index, type_id) => {
+                if type_id == T::TYPE_ID {
+                    let bytes = self.arena.get(arena_index)?;
+                    if bytes.len() != std::mem::size_of::<T>() {
+                        return None;
+                    }
+                    Some(bytes)
+                } else {
+                    None
+                }
+            },
+            _ => None,
+        }
+    }
 }
 pub struct ValueBuilder<'a> {
     arena: &'a mut Arena,
@@ -56,5 +72,9 @@ impl<'a> ValueBuilder<'a> {
     #[inline(always)]
     pub(crate) fn arena_mut(&mut self) -> &mut Arena {
         self.arena
+    }
+    pub fn build(&mut self, buffer: &[u8], mem_align: MemAlign, type_id_hash: u32) -> Value<'_> {
+        let arena_index = self.arena.store(buffer, mem_align);
+        Value::new(ValueKind::Custom(arena_index, type_id_hash), self.arena)
     }
 }
