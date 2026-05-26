@@ -1,5 +1,11 @@
 use varmap::*;
 
+#[derive(VarMapValue, Copy, Clone)]
+struct Point {
+    x: i32,
+    y: i32,
+}
+
 
 fn main() {
     let mut m = StrVarMap::new();
@@ -8,10 +14,13 @@ fn main() {
     m.set("object.age", 33);
     m.set("object.email", "john.doe@example.com");
     m.set("object.visible", true);
+    m.set("object.point", Point { x: 10, y: 20 });
 
     println!("name   : {}", m.get_str("object.name").unwrap());
     println!("surname: {}", m.get_str("object.surname").unwrap());
     println!("age    : {}", m.get_i32("object.age").unwrap());
     println!("email  : {}", m.get_str("object.email").unwrap());
     println!("visible: {}", m.get_bool("object.visible").unwrap());
+    let point = m.get::<Point>("object.point").unwrap();
+    println!("point  : x={}, y={}", point.x, point.y);
 }

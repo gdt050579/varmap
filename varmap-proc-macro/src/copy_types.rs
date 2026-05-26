@@ -96,6 +96,10 @@ pub(crate) fn generate_implementation(input: TokenStream) -> Result<TokenStream,
         const _STATIC_ASSERT_FOR_{name}_: fn() = || {{
             fn assert_copy<T: Copy>() {{}}
             assert_copy::<{name}>();
+            const _ALIGN_CHECK: () = {{
+                let align = ::core::mem::align_of::<{name}>();
+                assert!(align >= 1 && align <= 16, "VarMapValue: type alignment must be between 1 and 16 bytes");
+            }};            
         }};
         "#,
         name = name,
