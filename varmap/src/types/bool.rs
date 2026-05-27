@@ -8,14 +8,9 @@ impl VarMapValue for bool {
     fn to_value<'a>(&self, builder: &'a mut ValueBuilder<'a>) -> Value<'a> {
         Value::new(ValueKind::Bool(*self), builder.arena())
     }
-    fn from_value<'a>(value: &'a Value<'a>) -> Option<bool> {
-        <Self as VarMapStoredValue>::from_stored(value.kind(), value.arena())
-    }
-}
 
-impl VarMapStoredValue for bool {
-    fn from_stored<'a>(kind: &'a ValueKind, _arena: &'a Arena) -> Option<bool> {
-        match kind {
+    fn from_value<'a>(value: &Value<'a>) -> Option<bool> {
+        match value.kind() {
             ValueKind::Bool(b) => Some(*b),
             _ => None,
         }

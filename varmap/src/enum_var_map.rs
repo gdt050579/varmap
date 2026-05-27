@@ -57,15 +57,12 @@ impl<E: EnumVarMapKey> EnumVarMap<E> {
     /// Returns the value for `key` decoded as `V`.
     ///
     /// Returns `None` if the slot is empty or the stored type does not match `V`.
-    #[allow(private_bounds)]
     #[inline(always)]
-    pub fn get<'a, V: VarMapValue>(&'a self, key: E) -> Option<V::Decoded<'a>>
-    where
-        V: VarMapStoredValue,
-    {
+    pub fn get<'a, V: VarMapValue>(&'a self, key: E) -> Option<V::Decoded<'a>> {
         let index = key.to_index() as usize;
         let kind = self.values[index].as_ref()?;
-        V::from_stored(kind, &self.arena)
+        let value = Value::view(kind, &self.arena);
+        V::from_value(&value)
     }
 
     /// Returns `true` if the slot for `key` has been set.

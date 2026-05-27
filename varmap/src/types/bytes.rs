@@ -23,17 +23,16 @@ impl VarMapValue for &[u8] {
         }
     }
 
-    fn from_value<'a>(value: &'a Value<'a>) -> Option<&'a [u8]> {
-        <Self as VarMapStoredValue>::from_stored(value.kind(), value.arena())
+    fn from_value<'a>(value: &Value<'a>) -> Option<&'a [u8]> {
+        let kind = value.borrowed_kind()?;
+        decode_bytes_kind(kind, value.arena())
     }
 }
 
-impl VarMapStoredValue for &[u8] {
-    fn from_stored<'a>(kind: &'a ValueKind, arena: &'a Arena) -> Option<&'a [u8]> {
-        match kind {
-            ValueKind::Bytes(index) => arena.get(*index),
-            ValueKind::SmallBytes(small_bytes, len) => Some(&small_bytes[..*len as usize]),
-            _ => None,
-        }
+fn decode_bytes_kind<'a>(kind: &'a ValueKind, arena: &'a Arena) -> Option<&'a [u8]> {
+    match kind {
+        ValueKind::Bytes(index) => arena.get(*index),
+        ValueKind::SmallBytes(small_bytes, len) => Some(&small_bytes[..*len as usize]),
+        _ => None,
     }
 }

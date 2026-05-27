@@ -18,5 +18,5 @@ name = "varmap"
 [features]
 
 [dependencies]
-# varmap_proc_macro = { path = "../varmap-proc-macro" }
-varmap_proc_macro = "0.1.0"
+varmap_proc_macro = { path = "../varmap-proc-macro" }
+# varmap_proc_macro = "0.1.0"

@@ -107,11 +107,7 @@ impl VarMap {
     /// Returns the value for `key` decoded as `V`.
     ///
     /// Returns `None` if `key` is missing or the stored type does not match `V`.
-    #[allow(private_bounds)]
-    pub fn get<'a, V: VarMapValue>(&'a self, key: Key) -> Option<V::Decoded<'a>>
-    where
-        V: VarMapStoredValue,
-    {
+    pub fn get<'a, V: VarMapValue>(&'a self, key: Key) -> Option<V::Decoded<'a>> {
         let hvalue = key.hash & Hash::HASH_MASK;
         let hash_index = self.hashes.partition_point(|h| h.hash() < hvalue);
 
@@ -119,7 +115,8 @@ impl VarMap {
             if h.hash() == hvalue {
                 let value_index = h.index();
                 let kind = &self.values[value_index];
-                V::from_stored(kind, &self.arena)
+                let value = Value::view(kind, &self.arena);
+                V::from_value(&value)
             } else {
                 None
             }

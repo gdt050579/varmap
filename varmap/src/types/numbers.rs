@@ -9,14 +9,8 @@ macro_rules! impl_varmap_numeric {
                 fn to_value<'a>(&self, builder: &'a mut ValueBuilder<'a>) -> Value<'a> {
                     Value::new(ValueKind::$variant(*self), builder.arena())
                 }
-                fn from_value<'a>(value: &'a Value<'a>) -> Option<$ty> {
-                    <$ty as VarMapStoredValue>::from_stored(value.kind(), value.arena())
-                }
-            }
-
-            impl VarMapStoredValue for $ty {
-                fn from_stored<'a>(kind: &'a ValueKind, _arena: &'a Arena) -> Option<$ty> {
-                    match kind {
+                fn from_value<'a>(value: &Value<'a>) -> Option<$ty> {
+                    match value.kind() {
                         ValueKind::$variant(v) => Some(*v),
                         _ => None,
                     }
@@ -55,15 +49,10 @@ impl VarMapValue for u128 {
         )
     }
 
-    fn from_value<'a>(value: &'a Value<'a>) -> Option<u128> {
-        <Self as VarMapStoredValue>::from_stored(value.kind(), value.arena())
-    }
-}
-
-impl VarMapStoredValue for u128 {
-    fn from_stored<'a>(kind: &'a ValueKind, arena: &'a Arena) -> Option<u128> {
-        match kind {
-            ValueKind::U128(index) => arena
+    fn from_value<'a>(value: &Value<'a>) -> Option<u128> {
+        match value.kind() {
+            ValueKind::U128(index) => value
+                .arena()
                 .get(*index)
                 .map(|bytes| u128::from_le_bytes(bytes.try_into().unwrap())),
             _ => None,
@@ -87,15 +76,10 @@ impl VarMapValue for i128 {
         )
     }
 
-    fn from_value<'a>(value: &'a Value<'a>) -> Option<i128> {
-        <Self as VarMapStoredValue>::from_stored(value.kind(), value.arena())
-    }
-}
-
-impl VarMapStoredValue for i128 {
-    fn from_stored<'a>(kind: &'a ValueKind, arena: &'a Arena) -> Option<i128> {
-        match kind {
-            ValueKind::I128(index) => arena
+    fn from_value<'a>(value: &Value<'a>) -> Option<i128> {
+        match value.kind() {
+            ValueKind::I128(index) => value
+                .arena()
                 .get(*index)
                 .map(|bytes| i128::from_le_bytes(bytes.try_into().unwrap())),
             _ => None,

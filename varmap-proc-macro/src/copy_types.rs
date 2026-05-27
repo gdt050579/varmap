@@ -70,14 +70,6 @@ pub(crate) fn generate_implementation(input: TokenStream) -> Result<TokenStream,
     let type_id = fnv1a_32(&name);
     let out = format!(
         r#"
-        impl VarMapCustomValue for {name} {{
-            fn decode_from_bytes<'a>(bytes: &'a [u8]) -> Option<&'a {name}> {{
-                if bytes.len() != ::core::mem::size_of::<{name}>() {{
-                    return None;
-                }}
-                Some(unsafe {{ &*(bytes.as_ptr() as *const {name}) }})
-            }}
-        }}
         impl VarMapValue for {name} {{
             type Decoded<'a> = &'a {name};
             const TYPE_ID: u32 = {type_id}u32;
@@ -88,7 +80,7 @@ pub(crate) fn generate_implementation(input: TokenStream) -> Result<TokenStream,
                 builder.build(bytes, align, Self::TYPE_ID)
             }}
 
-            fn from_value<'a>(value: &'a Value<'a>) -> Option<Self::Decoded<'a>> {{
+            fn from_value<'a>(value: &Value<'a>) -> Option<Self::Decoded<'a>> {{
                 let buf = value.as_bytes::<{name}>()?;
                 unsafe {{ Some(&*(buf.as_ptr() as *const {name})) }}
             }}

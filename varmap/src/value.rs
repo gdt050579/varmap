@@ -27,38 +27,69 @@ pub(crate) enum ValueKind {
     Custom(ArenaIndex, u32),
 }
 
+enum ValueKindRef<'a> {
+    Borrowed(&'a ValueKind),
+    Owned(ValueKind),
+}
+
 /// An encoded value and its associated arena borrow.
 ///
 /// Produced by [`VarMapValue::to_value`]. Most callers use [`VarMap`](crate::VarMap),
 /// [`StrVarMap`](crate::StrVarMap), or [`EnumVarMap`](struct@crate::EnumVarMap) directly instead of
 /// handling `Value` explicitly.
 pub struct Value<'a> {
-    kind: ValueKind,
+    kind: ValueKindRef<'a>,
     arena: &'a Arena,
 }
 
 impl<'a> Value<'a> {
+    /// Builds an owned value for encoding (e.g. inside [`VarMapValue::to_value`]).
     #[inline(always)]
     pub(crate) fn new(kind: ValueKind, arena: &'a Arena) -> Self {
-        Self { kind, arena }
+        Self {
+            kind: ValueKindRef::Owned(kind),
+            arena,
+        }
     }
+
+    /// Builds a read view over a stored [`ValueKind`] and arena.
+    #[inline(always)]
+    pub(crate) fn view(kind: &'a ValueKind, arena: &'a Arena) -> Self {
+        Self {
+            kind: ValueKindRef::Borrowed(kind),
+            arena,
+        }
+    }
+
     #[inline(always)]
     pub(crate) fn kind(&self) -> &ValueKind {
-        &self.kind
+        match &self.kind {
+            ValueKindRef::Borrowed(kind) => kind,
+            ValueKindRef::Owned(kind) => kind,
+        }
     }
+
     #[inline(always)]
-    pub(crate) fn arena(&self) -> &Arena {
+    pub(crate) fn arena(&self) -> &'a Arena {
         self.arena
+    }
+
+    #[inline(always)]
+    pub(crate) fn borrowed_kind(&self) -> Option<&'a ValueKind> {
+        match &self.kind {
+            ValueKindRef::Borrowed(kind) => Some(kind),
+            ValueKindRef::Owned(_) => None,
+        }
     }
 
     /// Returns the raw arena bytes for a custom value of type `T`.
     ///
     /// Returns `None` if this value is not a custom payload, or if `T::TYPE_ID` does not match.
     pub fn as_bytes<T: VarMapValue>(&self) -> Option<&[u8]> {
-        match self.kind {
+        match self.kind() {
             ValueKind::Custom(arena_index, type_id) => {
-                if type_id == T::TYPE_ID {
-                    let bytes = self.arena.get(arena_index)?;
+                if *type_id == T::TYPE_ID {
+                    let bytes = self.arena.get(*arena_index)?;
                     if bytes.len() != std::mem::size_of::<T>() {
                         return None;
                     }

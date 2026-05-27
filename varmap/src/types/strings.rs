@@ -21,21 +21,20 @@ impl VarMapValue for &str {
         }
     }
 
-    fn from_value<'a>(value: &'a Value<'a>) -> Option<&'a str> {
-        <Self as VarMapStoredValue>::from_stored(value.kind(), value.arena())
+    fn from_value<'a>(value: &Value<'a>) -> Option<&'a str> {
+        let kind = value.borrowed_kind()?;
+        decode_str_kind(kind, value.arena())
     }
 }
 
-impl VarMapStoredValue for &str {
-    fn from_stored<'a>(kind: &'a ValueKind, arena: &'a Arena) -> Option<&'a str> {
-        match kind {
-            ValueKind::String(index) => arena
-                .get(*index)
-                .map(|s| unsafe { std::str::from_utf8_unchecked(s) }),
-            ValueKind::SmallString(small_string, len) => {
-                Some(unsafe { std::str::from_utf8_unchecked(&small_string[..*len as usize]) })
-            }
-            _ => None,
+fn decode_str_kind<'a>(kind: &'a ValueKind, arena: &'a Arena) -> Option<&'a str> {
+    match kind {
+        ValueKind::String(index) => arena
+            .get(*index)
+            .map(|s| unsafe { std::str::from_utf8_unchecked(s) }),
+        ValueKind::SmallString(small_string, len) => {
+            Some(unsafe { std::str::from_utf8_unchecked(&small_string[..*len as usize]) })
         }
+        _ => None,
     }
 }

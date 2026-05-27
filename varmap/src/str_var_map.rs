@@ -55,11 +55,7 @@ impl StrVarMap {
     /// Returns the value for `var_name` decoded as `V`.
     ///
     /// Returns `None` if the name is missing or the stored type does not match `V`.
-    #[allow(private_bounds)]
-    pub fn get<'a, V: VarMapValue>(&'a self, var_name: &str) -> Option<V::Decoded<'a>>
-    where
-        V: VarMapStoredValue,
-    {
+    pub fn get<'a, V: VarMapValue>(&'a self, var_name: &str) -> Option<V::Decoded<'a>> {
         self.map.get::<V>(Key::new(fnv1a(var_name)))
     }
 
