@@ -104,6 +104,27 @@ impl VarMap {
         self.hashes.insert(hash_index, hash);
     }
 
+    /// Updates the numeric value at `key` in place when supported for `T`.
+    ///
+    /// Returns `false` if `key` is missing, the stored type is not `T`, or `T` does not support
+    /// in-place updates (see [`VarMapValue::update_in_place`]).
+    pub fn update<T: VarMapValue>(&mut self, key: Key, f: impl FnOnce(&mut T)) -> bool {
+        let hvalue = key.hash & Hash::HASH_MASK;
+        let hash_index = self.hashes.partition_point(|h| h.hash() < hvalue);
+
+        let Some(h) = self.hashes.get(hash_index) else {
+            return false;
+        };
+        if h.hash() != hvalue {
+            return false;
+        }
+
+        let value_index = h.index();
+        let kind = &mut self.values[value_index];
+        let mut value = ValueMut::view(kind, &mut self.arena);
+        T::update_in_place(&mut value, f)
+    }
+
     /// Returns the value for `key` decoded as `V`.
     ///
     /// Returns `None` if `key` is missing or the stored type does not match `V`.

@@ -63,5 +63,6 @@ pub use traits::VarMapValue;
 pub use traits::EnumVarMapKey;
 pub use value::Value;
 pub use value::ValueBuilder;
+pub(crate) use value::ValueMut;
 pub use varmap_proc_macro::*;
 pub use enum_var_map::EnumVarMap;

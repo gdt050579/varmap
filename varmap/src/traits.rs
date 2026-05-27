@@ -1,4 +1,4 @@
-use crate::{Value, ValueBuilder};
+use crate::{Value, ValueBuilder, ValueMut};
 
 /// Types that can be stored in and read from a varmap.
 ///
@@ -18,6 +18,18 @@ pub trait VarMapValue {
     ///
     /// The arena lifetime `'a` comes from [`Value`], not from the reference to it.
     fn from_value<'a>(value: &Value<'a>) -> Option<Self::Decoded<'a>>;
+
+    /// Updates a stored value in place when supported for this type.
+    ///
+    /// Returns `false` if the slot does not hold this type or the type cannot be updated in place.
+    fn update_in_place<F>(value: &mut ValueMut<'_>, f: F) -> bool
+    where
+        F: FnOnce(&mut Self),
+        Self: Sized,
+    {
+        let _ = (value, f);
+        false
+    }
 }
 
 /// Enum key type for [`EnumVarMap`](struct@crate::EnumVarMap).

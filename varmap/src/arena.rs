@@ -50,4 +50,17 @@ impl Arena {
             }
         }
     }
+
+    pub(crate) fn get_mut(&mut self, index: ArenaIndex) -> Option<&mut [u8]> {
+        let start = index.offset as usize;
+        let end = start + index.size as usize;
+        if end > self.current_offset {
+            None
+        } else {
+            unsafe {
+                let p = (self.data.as_mut_ptr() as *mut u8).add(start);
+                Some(std::slice::from_raw_parts_mut(p, index.size as usize))
+            }
+        }
+    }
 }

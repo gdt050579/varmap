@@ -15,6 +15,18 @@ macro_rules! impl_varmap_numeric {
                         _ => None,
                     }
                 }
+                fn update_in_place<F>(value: &mut ValueMut<'_>, f: F) -> bool
+                where
+                    F: FnOnce(&mut $ty),
+                {
+                    match value.kind_mut() {
+                        ValueKind::$variant(v) => {
+                            f(v);
+                            true
+                        }
+                        _ => false,
+                    }
+                }
             }
         )*
     };
@@ -58,6 +70,25 @@ impl VarMapValue for u128 {
             _ => None,
         }
     }
+
+    fn update_in_place<F>(value: &mut ValueMut<'_>, f: F) -> bool
+    where
+        F: FnOnce(&mut u128),
+    {
+        let index = match *value.kind_mut() {
+            ValueKind::U128(index) => index,
+            _ => return false,
+        };
+        let Some(bytes) = value.arena_mut().get_mut(index) else {
+            return false;
+        };
+        if bytes.len() != 16 {
+            return false;
+        }
+        let n = unsafe { &mut *(bytes.as_mut_ptr() as *mut u128) };
+        f(n);
+        true
+    }
 }
 
 impl VarMapValue for i128 {
@@ -84,5 +115,24 @@ impl VarMapValue for i128 {
                 .map(|bytes| i128::from_le_bytes(bytes.try_into().unwrap())),
             _ => None,
         }
+    }
+
+    fn update_in_place<F>(value: &mut ValueMut<'_>, f: F) -> bool
+    where
+        F: FnOnce(&mut i128),
+    {
+        let index = match *value.kind_mut() {
+            ValueKind::I128(index) => index,
+            _ => return false,
+        };
+        let Some(bytes) = value.arena_mut().get_mut(index) else {
+            return false;
+        };
+        if bytes.len() != 16 {
+            return false;
+        }
+        let n = unsafe { &mut *(bytes.as_mut_ptr() as *mut i128) };
+        f(n);
+        true
     }
 }

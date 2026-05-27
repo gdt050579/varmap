@@ -120,6 +120,28 @@ fn check_simple() {
 }
 
 #[test]
+fn check_update_value_mut() {
+    let mut kind = ValueKind::U32(10);
+    let mut arena = Arena::new();
+    let mut value = ValueMut::view(&mut kind, &mut arena);
+    assert!(u32::update_in_place(&mut value, |n| *n += 5));
+    assert_eq!(kind, ValueKind::U32(15));
+}
+
+#[test]
+fn check_update_numeric() {
+    let mut map = VarMap::new();
+    map.set(Key::new(10_000_000), 10u32);
+    map.set(Key::new(20_000_000), "text");
+
+    assert!(map.update::<u32>(Key::new(10_000_000), |n| *n += 5));
+    assert_eq!(map.get::<u32>(Key::new(10_000_000)), Some(15));
+
+    assert!(!map.update::<u32>(Key::new(20_000_000), |n| *n += 1));
+    assert!(!map.update(Key::new(99_000_000), |n: &mut u32| *n += 1));
+}
+
+#[test]
 fn check_str_var_map() {
     let mut map = StrVarMap::new();
     map.set("var1", 1u8);

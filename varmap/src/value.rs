@@ -103,6 +103,31 @@ impl<'a> Value<'a> {
     }
 }
 
+/// Mutable view over a stored [`ValueKind`] and its arena.
+///
+/// Used by [`VarMap::update`](crate::VarMap::update) and [`VarMapValue::update_in_place`].
+pub struct ValueMut<'a> {
+    kind: &'a mut ValueKind,
+    arena: &'a mut Arena,
+}
+
+impl<'a> ValueMut<'a> {
+    #[inline(always)]
+    pub(crate) fn view(kind: &'a mut ValueKind, arena: &'a mut Arena) -> Self {
+        Self { kind, arena }
+    }
+
+    #[inline(always)]
+    pub(crate) fn kind_mut(&mut self) -> &mut ValueKind {
+        self.kind
+    }
+
+    #[inline(always)]
+    pub(crate) fn arena_mut(&mut self) -> &mut Arena {
+        self.arena
+    }
+}
+
 /// Helper for encoding [`VarMapValue`] types into a map arena.
 ///
 /// Created internally when calling [`VarMap::set`](crate::VarMap::set). Custom
