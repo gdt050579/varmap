@@ -124,7 +124,7 @@ fn check_update_value_mut() {
     let mut kind = ValueKind::U32(10);
     let mut arena = Arena::new();
     let mut value = ValueMut::view(&mut kind, &mut arena);
-    assert!(u32::update_in_place(&mut value, |n| *n += 5));
+    assert!(u32::update(&mut value, |n| *n += 5));
     assert_eq!(kind, ValueKind::U32(15));
 }
 

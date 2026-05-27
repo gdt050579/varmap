@@ -22,7 +22,7 @@ pub trait VarMapValue {
     /// Updates a stored value in place when supported for this type.
     ///
     /// Returns `false` if the slot does not hold this type or the type cannot be updated in place.
-    fn update_in_place<F>(value: &mut ValueMut<'_>, f: F) -> bool
+    fn update<F>(value: &mut ValueMut<'_>, f: F) -> bool
     where
         F: FnOnce(&mut Self),
         Self: Sized,

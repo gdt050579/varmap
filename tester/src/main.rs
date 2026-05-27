@@ -16,6 +16,8 @@ fn main() {
     m.set("object.visible", true);
     m.set("object.point", Point { x: 10, y: 20 });
 
+    m.update::<i32>("object.age", |age| *age += 1);
+
     println!("name   : {}", m.get_str("object.name").unwrap());
     println!("surname: {}", m.get_str("object.surname").unwrap());
     println!("age    : {}", m.get_i32("object.age").unwrap());

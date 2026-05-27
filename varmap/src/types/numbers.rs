@@ -15,7 +15,7 @@ macro_rules! impl_varmap_numeric {
                         _ => None,
                     }
                 }
-                fn update_in_place<F>(value: &mut ValueMut<'_>, f: F) -> bool
+                fn update<F>(value: &mut ValueMut<'_>, f: F) -> bool
                 where
                     F: FnOnce(&mut $ty),
                 {
@@ -71,7 +71,7 @@ impl VarMapValue for u128 {
         }
     }
 
-    fn update_in_place<F>(value: &mut ValueMut<'_>, f: F) -> bool
+    fn update<F>(value: &mut ValueMut<'_>, f: F) -> bool
     where
         F: FnOnce(&mut u128),
     {
@@ -117,7 +117,7 @@ impl VarMapValue for i128 {
         }
     }
 
-    fn update_in_place<F>(value: &mut ValueMut<'_>, f: F) -> bool
+    fn update<F>(value: &mut ValueMut<'_>, f: F) -> bool
     where
         F: FnOnce(&mut i128),
     {

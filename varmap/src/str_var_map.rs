@@ -52,6 +52,14 @@ impl StrVarMap {
         self.map.set(Key::new(fnv1a(var_name)), value);
     }
 
+    /// Updates the value at `var_name` in place when supported for `T`.
+    ///
+    /// Returns `false` if `var_name` is missing, the stored type is not `T`, or `T` does not support
+    /// in-place updates (see [`VarMapValue::update`]).
+    pub fn update<T: VarMapValue>(&mut self, var_name: &str, f: impl FnOnce(&mut T)) -> bool {
+        self.map.update(Key::new(fnv1a(var_name)), f)
+    }
+
     /// Returns the value for `var_name` decoded as `V`.
     ///
     /// Returns `None` if the name is missing or the stored type does not match `V`.

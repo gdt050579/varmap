@@ -122,7 +122,7 @@ impl VarMap {
         let value_index = h.index();
         let kind = &mut self.values[value_index];
         let mut value = ValueMut::view(kind, &mut self.arena);
-        T::update_in_place(&mut value, f)
+        T::update(&mut value, f)
     }
 
     /// Returns the value for `key` decoded as `V`.
