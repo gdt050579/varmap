@@ -1,6 +1,6 @@
 [package]
 name = "varmap"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Gavrilut Dragos <gavrilut.dragos@gmail.com>"]
 license = "MIT"
@@ -18,5 +18,5 @@ name = "varmap"
 [features]
 
 [dependencies]
-varmap_proc_macro = { path = "../varmap-proc-macro" }
-# varmap_proc_macro = "0.1.0"
+# varmap_proc_macro = { path = "../varmap-proc-macro" }
+varmap_proc_macro = "0.1.1"
