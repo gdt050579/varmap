@@ -54,6 +54,21 @@ impl<E: EnumVarMapKey> EnumVarMap<E> {
         self.values[index] = Some(value_kind);
     }
 
+    /// Updates the value at `key` in place when supported for `T`.
+    ///
+    /// Returns `false` if `key` is missing, the stored type is not `T`, or `T` does not support
+    /// in-place updates (see [`VarMapValue::update`]).
+    pub fn update<T: VarMapValue>(&mut self, key: E, f: impl FnOnce(&mut T)) -> bool {
+        let index = key.to_index() as usize;
+        if let Some(kind) = &mut self.values[index] {
+            let mut value = ValueMut::view(kind, &mut self.arena);
+            T::update(&mut value, f);
+            true
+        } else {
+            false
+        }
+    }
+
     /// Returns the value for `key` decoded as `V`.
     ///
     /// Returns `None` if the slot is empty or the stored type does not match `V`.

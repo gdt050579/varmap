@@ -23,7 +23,7 @@ The internal arena is **append-only**. Calling `set` on an existing key updates 
 | Frequent updates to the same keys with large / arena-backed values | Poor — arena memory grows; prefer `clear()` and repopulate, or another map |
 | Hot loop re-assigning every key every tick                         | Poor — use `clear()` between logical snapshots, or avoid varmap            |
 
-Use [`clear()`](#other-operations) when you need a fresh binding of all keys (for example between requests or benchmark iterations). That resets the arena as well as the key table. It also preserves the alocated arena space for future writes.
+Use `clear()` when you need a fresh binding of all keys (for example between requests or benchmark iterations). That resets the arena and removes current entries while preserving already allocated capacity for future writes.
 
 ## Installation
 
@@ -87,6 +87,33 @@ map.get::<u32>("user.age");
 map.get::<&str>("user.name");
 ```
 
+### In-place updates
+
+`VarMap` and `StrVarMap` support in-place mutation through `update` (`EnumVarMap` currently does not expose `update`).
+This is useful for counters and custom `Copy` values that implement `VarMapValue::update` (the derive macro generates this automatically).
+
+```rust
+use varmap::{StrVarMap, VarMapValue};
+
+#[derive(VarMapValue, Copy, Clone, Eq, PartialEq, Debug)]
+struct Stats {
+    hits: u32,
+    misses: u32,
+}
+
+let mut map = StrVarMap::new();
+map.set("count", 10u32);
+map.set("stats", Stats { hits: 1, misses: 0 });
+
+assert!(map.update::<u32>("count", |n| *n += 5));
+assert!(map.update::<Stats>("stats", |s| s.hits += 1));
+
+assert_eq!(map.get_u32("count"), Some(15));
+assert_eq!(map.get::<Stats>("stats").map(|s| s.hits), Some(2));
+```
+
+`update` returns `false` if the key is missing, the stored type does not match, or the type cannot be updated in place.
+
 ### Other operations
 
 ```rust
@@ -111,6 +138,9 @@ map.set(var!("user.name"), "Alice");
 assert_eq!(map.get_u32(var!("user.age")), Some(32));
 assert_eq!(map.get_str(var!("user.name")), Some("Alice"));
 
+assert!(map.update::<u32>(var!("user.age"), |age| *age += 1));
+assert_eq!(map.get_u32(var!("user.age")), Some(33));
+
 // Or supply a precomputed hash yourself
 map.set(Key::new(0x0123_4567_89AB_CDEF), 1u8);
 ```
@@ -127,10 +157,10 @@ map.set(Key::new(0x0123_4567_89AB_CDEF), 1u8);
 
 Use when the key set is a **closed enum** known at compile time. Each variant maps to a fixed slot (one per enum discriminant), giving **O(1)** access with no hashing or binary search.
 
-Derive `EnumVarMapKey` on your enum (requires `#[repr(u16)]`, `Copy`, and at most 65 536 variants):
+Derive `EnumVarMap` on your enum (requires `#[repr(u16)]`, `Copy`, and at most 65 536 variants):
 
 ```rust
-use varmap::{EnumVarMap, EnumVarMapKey};
+use varmap::EnumVarMap;
 
 #[derive(EnumVarMap, Copy, Clone, Debug)]
 #[repr(u16)]
@@ -177,7 +207,9 @@ let back: &Point = map.get("origin").unwrap();
 assert_eq!(*back, p);
 ```
 
-Generics and non-`Copy` types are not supported by the derive macro.
+`#[derive(VarMapValue)]` also generates in-place update support, so custom values can be mutated with `map.update::<T>(...)` on `VarMap` and `StrVarMap`.
+
+Generics, unions, and non-`Copy` types are not supported by the derive macro.
 
 ---
 

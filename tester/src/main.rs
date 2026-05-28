@@ -25,4 +25,7 @@ fn main() {
     println!("visible: {}", m.get_bool("object.visible").unwrap());
     let point = m.get::<Point>("object.point").unwrap();
     println!("point  : x={}, y={}", point.x, point.y);
+    m.update::<Point>("object.point", |point| point.x += 1);
+    let point2 = m.get::<Point>("object.point").unwrap();
+    println!("point2 : x={}, y={}", point2.x, point2.y);
 }

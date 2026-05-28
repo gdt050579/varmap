@@ -126,6 +126,27 @@ impl<'a> ValueMut<'a> {
     pub(crate) fn arena_mut(&mut self) -> &mut Arena {
         self.arena
     }
+    pub fn as_bytes_mut<T: VarMapValue>(&mut self) -> Option<&mut [u8]> {
+        let arena_index = match self.kind_mut() {
+            ValueKind::Custom(arena_index, type_id) => {
+                if *type_id == T::TYPE_ID {
+                    Some(*arena_index)
+                } else {
+                    return None;
+                }
+            }
+            _ => return None,
+        };
+        if let Some(arena_index) = arena_index {
+            let bytes = self.arena_mut().get_mut(arena_index)?;
+            if bytes.len() != std::mem::size_of::<T>() {
+                return None;
+            }
+            Some(bytes)
+        } else {
+            None
+        }
+    }
 }
 
 /// Helper for encoding [`VarMapValue`] types into a map arena.
