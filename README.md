@@ -89,7 +89,7 @@ map.get::<&str>("user.name");
 
 ### In-place updates
 
-`VarMap` and `StrVarMap` support in-place mutation through `update` (`EnumVarMap` currently does not expose `update`).
+All three maps (`VarMap`, `StrVarMap`, and `EnumVarMap`) support in-place mutation through `update`.
 This is useful for counters and custom `Copy` values that implement `VarMapValue::update` (the derive macro generates this automatically).
 
 ```rust
@@ -207,7 +207,7 @@ let back: &Point = map.get("origin").unwrap();
 assert_eq!(*back, p);
 ```
 
-`#[derive(VarMapValue)]` also generates in-place update support, so custom values can be mutated with `map.update::<T>(...)` on `VarMap` and `StrVarMap`.
+`#[derive(VarMapValue)]` also generates in-place update support, so custom values can be mutated with `map.update::<T>(...)` on all three map types.
 
 Generics, unions, and non-`Copy` types are not supported by the derive macro.
 
