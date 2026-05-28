@@ -219,6 +219,17 @@ fn check_custom_type() {
 }
 
 #[test]
+fn check_update_custom_type() {
+    let mut m = StrVarMap::new();
+    let obj = MyType { a: 0, b: 1, c: 2, d: 3, e: [0,1,2]};
+    m.set("my_type", obj);
+    assert!(m.update::<MyType>("my_type", |obj| obj.a += 1));
+    let obj2 = m.get::<MyType>("my_type").unwrap();
+    assert_eq!(obj2.a, 1);
+}
+
+
+#[test]
 fn check_char() {
     let mut m = StrVarMap::new();
     m.set("char", 'a');

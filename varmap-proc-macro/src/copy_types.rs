@@ -84,6 +84,27 @@ pub(crate) fn generate_implementation(input: TokenStream) -> Result<TokenStream,
                 let buf = value.as_bytes::<{name}>()?;
                 unsafe {{ Some(&*(buf.as_ptr() as *const {name})) }}
             }}
+            fn update<F>(value: &mut ValueMut<'_>, f: F) -> bool
+            where
+                F: FnOnce(&mut {name})
+            {{
+                let (index,type_id) = match *value.kind_mut() {{
+                    ValueKind::Custom(index,type_id) => (index,type_id),
+                    _ => return false,
+                }};
+                if Self::TYPE_ID != type_id {{
+                    return false;
+                }}
+                let Some(bytes) = value.arena_mut().get_mut(index) else {{
+                    return false;
+                }};
+                if bytes.len() != ::core::mem::size_of::<{name}>() {{
+                    return false;
+                }}
+                let obj = unsafe {{ &mut *(bytes.as_mut_ptr() as *mut {name}) }};
+                f(obj);
+                true
+            }}            
         }}
         const _STATIC_ASSERT_FOR_{name}_: fn() = || {{
             fn assert_copy<T: Copy>() {{}}
