@@ -63,4 +63,8 @@ impl Arena {
             }
         }
     }
+
+    pub(crate) fn allocated_size(&self) -> usize {
+        self.data.capacity() * 16 + std::mem::size_of::<Self>()
+    }
 }

@@ -184,6 +184,11 @@ impl VarMap {
         let hash_index = self.hashes.partition_point(|h| h.hash() < hvalue);
         hash_index < self.hashes.len() && self.hashes[hash_index].hash() == hvalue
     }
+
+    /// Returns the total allocated size of the map.
+    pub fn allocated_size(&self) -> usize {
+        self.arena.allocated_size() + self.hashes.capacity() * std::mem::size_of::<Hash>() + self.values.capacity() * std::mem::size_of::<ValueKind>()
+    }
 }
 
 impl Default for VarMap {

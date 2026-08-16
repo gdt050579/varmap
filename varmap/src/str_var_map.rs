@@ -91,6 +91,11 @@ impl StrVarMap {
     pub fn contains(&self, var_name: &str) -> bool {
         self.map.contains(Key::new(fnv1a(var_name)))
     }
+
+    /// Returns the total allocated size of the map.
+    pub fn allocated_size(&self) -> usize {
+        self.map.allocated_size()
+    }
 }
 
 impl Default for StrVarMap {

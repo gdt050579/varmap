@@ -48,6 +48,7 @@ mod str_var_map;
 mod enum_var_map;
 mod traits;
 mod types;
+mod pool;
 
 #[cfg(test)]
 mod tests;
@@ -66,3 +67,8 @@ pub use value::ValueMut;
 pub use value::ValueBuilder;
 pub use varmap_proc_macro::*;
 pub use enum_var_map::EnumVarMap;
+pub use pool::VarMapPool;
+pub use pool::StrVarMapPool;
+pub use pool::EnumVarMapPool;
+pub use pool::ClearStrategy;
+pub use pool::PoolHandle;

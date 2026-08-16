@@ -106,6 +106,10 @@ impl<E: EnumVarMapKey> EnumVarMap<E> {
         get_ipv4 => Ipv4Addr,
         get_ipv6 => Ipv6Addr,
     }
+    /// Returns the total allocated size of the map.
+    pub fn allocated_size(&self) -> usize {
+        self.arena.allocated_size() + self.values.len() * std::mem::size_of::<Option<ValueKind>>()
+    }
 }
 
 impl<E: EnumVarMapKey> Default for EnumVarMap<E> {
