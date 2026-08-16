@@ -51,6 +51,8 @@ macro_rules! impl_getters {
 ///
 /// Optimized for compile-time key names via [`var!`]. Supports at most **65 536** distinct keys.
 /// See the [crate-level documentation](crate) for the intended write-once-read-many usage model.
+///
+/// [`VarMap::new`] is `const`, so empty maps can be constructed in `const` / `static` contexts.
 pub struct VarMap {
     arena: Arena,
     hashes: Vec<Hash>,
@@ -59,6 +61,15 @@ pub struct VarMap {
 
 impl VarMap {
     /// Creates an empty map.
+    ///
+    /// This constructor is `const`, so it can be used to initialize maps in `const` or `static`
+    /// contexts (for example behind a `Mutex` or other sync wrapper).
+    ///
+    /// ```
+    /// use varmap::VarMap;
+    ///
+    /// const EMPTY: VarMap = VarMap::new();
+    /// ```
     pub const fn new() -> Self {
         Self {
             arena: Arena::new(),

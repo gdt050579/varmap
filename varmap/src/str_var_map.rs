@@ -38,7 +38,7 @@ pub struct StrVarMap {
 
 impl StrVarMap {
     /// Creates an empty map.
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self { map: VarMap::new() }
     }
 

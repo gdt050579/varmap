@@ -126,6 +126,14 @@ map.clear();   // drop all keys and reset the arena
 
 Use when key names are **fixed at compile time**. The `var!` macro expands to a `Key` holding the FNV-1a hash of the string literal, so lookups skip string hashing and comparison.
 
+`VarMap::new()` is a **`const` constructor**, so an empty map can be created in `const` / `static` contexts:
+
+```rust
+use varmap::VarMap;
+
+const EMPTY: VarMap = VarMap::new();
+```
+
 ```rust
 use varmap::{VarMap, Key, var};
 
