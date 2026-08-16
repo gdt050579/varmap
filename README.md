@@ -23,7 +23,7 @@ The internal arena is **append-only**. Calling `set` on an existing key updates 
 | Frequent updates to the same keys with large / arena-backed values | Poor — arena memory grows; prefer `clear()` and repopulate, or another map |
 | Hot loop re-assigning every key every tick                         | Poor — use `clear()` between logical snapshots, or avoid varmap            |
 
-Use `clear()` when you need a fresh binding of all keys (for example between requests or benchmark iterations). That resets the arena and removes current entries while preserving already allocated capacity for future writes.
+Use `clear()` when you need a fresh binding of all keys (for example between requests or benchmark iterations). That resets the arena and removes current entries while preserving already allocated capacity for future writes. To recycle that capacity across many short-lived maps, use a [pool](#pools).
 
 ## Installation
 
@@ -191,6 +191,86 @@ assert_eq!(map.contains(ConfigKey::Port), true);
 ```
 
 `EnumVarMap` owns its own arena (unlike `StrVarMap`, which delegates to an inner `VarMap`). Memory for every enum variant slot is reserved up front, including variants that have not been set yet.
+
+---
+
+## Pools
+
+Each map type has a matching pool that checks out reusable maps. `release` clears the map but **keeps heap and arena capacity**, which is the intended reuse path when you would otherwise `clear()` and throw the map away (one map per request, per snapshot, per benchmark iteration).
+
+| Pool             | Map                         |
+| ---------------- | --------------------------- |
+| `VarMapPool`     | [`VarMap`](#varmap)         |
+| `StrVarMapPool`  | [`StrVarMap`](#strvarmap)   |
+| `EnumVarMapPool` | [`EnumVarMap`](#enumvarmap) |
+
+```rust
+use varmap::{var, Key, VarMapPool};
+
+let mut pool = VarMapPool::new();
+let h = pool.allocate();
+pool.get_mut(h).unwrap().set(var!("port"), 8080u16);
+assert_eq!(pool.get(h).unwrap().get_u16(var!("port")), Some(8080));
+pool.release(h);
+assert!(pool.get(h).is_none());
+```
+
+`StrVarMapPool` and `EnumVarMapPool` use the same checkout API:
+
+```rust
+use varmap::StrVarMapPool;
+
+let mut pool = StrVarMapPool::new();
+let h = pool.allocate();
+pool.get_mut(h).unwrap().set("host", "localhost");
+assert_eq!(pool.get(h).unwrap().get_str("host"), Some("localhost"));
+pool.release(h);
+```
+
+```rust
+use varmap::{EnumVarMap, EnumVarMapKey, EnumVarMapPool};
+
+#[derive(EnumVarMap, Copy, Clone, Debug)]
+#[repr(u16)]
+enum ConfigKey {
+    Port,
+    Host,
+}
+
+let mut pool = EnumVarMapPool::<ConfigKey>::new();
+let h = pool.allocate();
+pool.get_mut(h).unwrap().set(ConfigKey::Port, 8080u16);
+assert_eq!(pool.get(h).unwrap().get_u16(ConfigKey::Port), Some(8080));
+pool.release(h);
+```
+
+### Handles
+
+`allocate` returns a `PoolHandle`. Handles are `Copy`; copies refer to the same slot. A handle is valid only for the pool that minted it, and only until that slot is `release`d or the pool is `clear`ed. Stale handles yield `None` / a no-op.
+
+The handle type is shared by all three pools and is **not** tagged with the map type. Do not pass a handle from one pool into another: slot index and generation can coincide, so the other pool may treat it as live.
+
+### Clearing the pool
+
+`clear` invalidates every outstanding handle. `ClearStrategy` chooses what to retain:
+
+| Strategy                   | Effect                                                                    |
+| -------------------------- | ------------------------------------------------------------------------- |
+| `FreeEntireMemory`         | Drop every map and return memory to the allocator                         |
+| `KeepSmallestN(n)`         | Keep the `n` smallest maps by allocated size                              |
+| `KeepNClosestToAverage(n)` | Keep the `n` maps closest to the mean allocated size                      |
+| `KeepLargestN(n)`          | Keep the `n` largest maps (best when you want to retain expensive arenas) |
+
+`n` is a **count of maps**, not a byte budget, and is clamped to the current pool size. Kept maps are emptied; their **capacity** is kept for later `allocate`s. Maps that are not kept are dropped.
+
+```rust
+use varmap::{ClearStrategy, VarMapPool};
+
+let mut pool = VarMapPool::new();
+let h = pool.allocate();
+pool.release(h);
+pool.clear(ClearStrategy::KeepLargestN(4));
+```
 
 ---
 
