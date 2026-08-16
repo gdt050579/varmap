@@ -266,3 +266,342 @@ fn check_ipv4_addr_str_var_map() {
     m.set("ipv4_addr", Ipv4Addr::new(127, 0, 0, 1));
     assert_eq!(m.get_ipv4("ipv4_addr"), Some(Ipv4Addr::new(127, 0, 0, 1)));
 }
+
+fn pool_payload(len: usize) -> String {
+    "x".repeat(len)
+}
+
+/// One empty map (no heap) plus mid/large arena payloads. Handles are ordered by `allocated_size`.
+fn sized_handles<T>(
+    allocate: impl Fn(&mut T) -> PoolHandle,
+    set_str: impl Fn(&mut T, PoolHandle, &str),
+    size_of: impl Fn(&T, PoolHandle) -> usize,
+    pool: &mut T,
+) -> ([PoolHandle; 3], [usize; 3]) {
+    let small = allocate(pool);
+
+    let mid = allocate(pool);
+    let mid_payload = pool_payload(64 * 1024);
+    set_str(pool, mid, &mid_payload);
+
+    let large = allocate(pool);
+    let large_payload = pool_payload(1024 * 1024);
+    set_str(pool, large, &large_payload);
+
+    let mut pairs = [
+        (small, size_of(pool, small)),
+        (mid, size_of(pool, mid)),
+        (large, size_of(pool, large)),
+    ];
+    pairs.sort_by_key(|(_, sz)| *sz);
+    (
+        [pairs[0].0, pairs[1].0, pairs[2].0],
+        [pairs[0].1, pairs[1].1, pairs[2].1],
+    )
+}
+
+fn sizes_closest_to_average(sizes: [usize; 3]) -> usize {
+    let avg = sizes.iter().sum::<usize>() / sizes.len();
+    let min_diff = sizes.iter().map(|s| s.abs_diff(avg)).min().unwrap();
+    sizes.into_iter().find(|s| s.abs_diff(avg) == min_diff).unwrap()
+}
+
+fn assert_handles_invalid(pool_get: impl Fn(PoolHandle) -> bool, handles: [PoolHandle; 3]) {
+    for h in handles {
+        assert!(!pool_get(h), "handle should be invalid after clear");
+    }
+}
+
+fn var_map_pool_three_sizes(pool: &mut VarMapPool) -> ([PoolHandle; 3], [usize; 3]) {
+    sized_handles(
+        |p| p.allocate(),
+        |p, h, s| p.get_mut(h).unwrap().set(var!("s"), s),
+        |p, h| p.get(h).unwrap().allocated_size(),
+        pool,
+    )
+}
+
+fn str_var_map_pool_three_sizes(pool: &mut StrVarMapPool) -> ([PoolHandle; 3], [usize; 3]) {
+    sized_handles(
+        |p| p.allocate(),
+        |p, h, s| p.get_mut(h).unwrap().set("s", s),
+        |p, h| p.get(h).unwrap().allocated_size(),
+        pool,
+    )
+}
+
+fn enum_var_map_pool_three_sizes(pool: &mut EnumVarMapPool<TestEnum>) -> ([PoolHandle; 3], [usize; 3]) {
+    sized_handles(
+        |p| p.allocate(),
+        |p, h, s| p.get_mut(h).unwrap().set(TestEnum::Var3, s),
+        |p, h| p.get(h).unwrap().allocated_size(),
+        pool,
+    )
+}
+
+#[test]
+fn check_var_map_pool_clear_strategies() {
+    let mut pool = VarMapPool::new();
+    pool.clear(ClearStrategy::FreeEntireMemory);
+    pool.clear(ClearStrategy::KeepLargestN(1));
+    pool.clear(ClearStrategy::KeepSmallestN(1));
+    pool.clear(ClearStrategy::KeepNClosestToAverage(1));
+
+    let (handles, sizes) = var_map_pool_three_sizes(&mut pool);
+    pool.clear(ClearStrategy::KeepLargestN(1));
+    assert_handles_invalid(|h| pool.get(h).is_some(), handles);
+    let kept = pool.allocate();
+    assert!(pool.get(kept).unwrap().get_str(var!("s")).is_none());
+    assert_eq!(pool.get(kept).unwrap().allocated_size(), sizes[2]);
+    let fresh = pool.allocate();
+    assert!(pool.get(fresh).unwrap().allocated_size() < pool.get(kept).unwrap().allocated_size());
+    pool.release(kept);
+    pool.release(fresh);
+
+    let (handles, sizes) = var_map_pool_three_sizes(&mut pool);
+    pool.clear(ClearStrategy::KeepSmallestN(1));
+    assert_handles_invalid(|h| pool.get(h).is_some(), handles);
+    let h = pool.allocate();
+    assert_eq!(pool.get(h).unwrap().allocated_size(), sizes[0]);
+    pool.release(h);
+
+    let (handles, sizes) = var_map_pool_three_sizes(&mut pool);
+    pool.clear(ClearStrategy::KeepNClosestToAverage(1));
+    assert_handles_invalid(|h| pool.get(h).is_some(), handles);
+    let h = pool.allocate();
+    assert_eq!(pool.get(h).unwrap().allocated_size(), sizes_closest_to_average(sizes));
+    pool.release(h);
+
+    let (handles, sizes) = var_map_pool_three_sizes(&mut pool);
+    pool.clear(ClearStrategy::KeepLargestN(2));
+    assert_handles_invalid(|h| pool.get(h).is_some(), handles);
+    let a = pool.allocate();
+    let b = pool.allocate();
+    let mut kept = [pool.get(a).unwrap().allocated_size(), pool.get(b).unwrap().allocated_size()];
+    let mut expected = [sizes[1], sizes[2]];
+    kept.sort();
+    expected.sort();
+    assert_eq!(kept, expected);
+    pool.release(a);
+    pool.release(b);
+
+    let (handles, sizes) = var_map_pool_three_sizes(&mut pool);
+    pool.clear(ClearStrategy::KeepLargestN(100));
+    assert_handles_invalid(|h| pool.get(h).is_some(), handles);
+    let a = pool.allocate();
+    let b = pool.allocate();
+    let c = pool.allocate();
+    let mut kept = [
+        pool.get(a).unwrap().allocated_size(),
+        pool.get(b).unwrap().allocated_size(),
+        pool.get(c).unwrap().allocated_size(),
+    ];
+    kept.sort();
+    assert_eq!(kept, sizes);
+    pool.release(a);
+    pool.release(b);
+    pool.release(c);
+
+    let (handles, _) = var_map_pool_three_sizes(&mut pool);
+    pool.clear(ClearStrategy::KeepLargestN(0));
+    assert_handles_invalid(|h| pool.get(h).is_some(), handles);
+    let h = pool.allocate();
+    assert!(pool.get(h).unwrap().get_str(var!("s")).is_none());
+    pool.release(h);
+
+    let (handles, _) = var_map_pool_three_sizes(&mut pool);
+    pool.clear(ClearStrategy::FreeEntireMemory);
+    assert_handles_invalid(|h| pool.get(h).is_some(), handles);
+    let h = pool.allocate();
+    pool.get_mut(h).unwrap().set(var!("n"), 7u8);
+    assert!(pool.get(handles[0]).is_none());
+    assert_eq!(pool.get(h).unwrap().get_u8(var!("n")), Some(7));
+}
+
+#[test]
+fn check_str_var_map_pool_clear_strategies() {
+    let mut pool = StrVarMapPool::new();
+
+    let (handles, sizes) = str_var_map_pool_three_sizes(&mut pool);
+    pool.clear(ClearStrategy::KeepLargestN(1));
+    assert_handles_invalid(|h| pool.get(h).is_some(), handles);
+    let kept = pool.allocate();
+    assert!(!pool.get(kept).unwrap().contains("s"));
+    assert_eq!(pool.get(kept).unwrap().allocated_size(), sizes[2]);
+    let fresh = pool.allocate();
+    assert!(pool.get(fresh).unwrap().allocated_size() < pool.get(kept).unwrap().allocated_size());
+    pool.release(kept);
+    pool.release(fresh);
+
+    let (handles, sizes) = str_var_map_pool_three_sizes(&mut pool);
+    pool.clear(ClearStrategy::KeepSmallestN(1));
+    assert_handles_invalid(|h| pool.get(h).is_some(), handles);
+    let h = pool.allocate();
+    assert_eq!(pool.get(h).unwrap().allocated_size(), sizes[0]);
+    pool.release(h);
+
+    let (handles, sizes) = str_var_map_pool_three_sizes(&mut pool);
+    pool.clear(ClearStrategy::KeepNClosestToAverage(1));
+    assert_handles_invalid(|h| pool.get(h).is_some(), handles);
+    let h = pool.allocate();
+    assert_eq!(pool.get(h).unwrap().allocated_size(), sizes_closest_to_average(sizes));
+    pool.release(h);
+
+    let (handles, sizes) = str_var_map_pool_three_sizes(&mut pool);
+    pool.clear(ClearStrategy::KeepLargestN(2));
+    assert_handles_invalid(|h| pool.get(h).is_some(), handles);
+    let a = pool.allocate();
+    let b = pool.allocate();
+    let mut kept = [pool.get(a).unwrap().allocated_size(), pool.get(b).unwrap().allocated_size()];
+    let mut expected = [sizes[1], sizes[2]];
+    kept.sort();
+    expected.sort();
+    assert_eq!(kept, expected);
+    pool.release(a);
+    pool.release(b);
+
+    let (handles, _) = str_var_map_pool_three_sizes(&mut pool);
+    pool.clear(ClearStrategy::FreeEntireMemory);
+    assert_handles_invalid(|h| pool.get(h).is_some(), handles);
+    let h = pool.allocate();
+    assert!(!pool.get(h).unwrap().contains("s"));
+}
+
+#[test]
+fn check_enum_var_map_pool_clear_strategies() {
+    let mut pool = EnumVarMapPool::<TestEnum>::new();
+
+    let (handles, sizes) = enum_var_map_pool_three_sizes(&mut pool);
+    pool.clear(ClearStrategy::KeepLargestN(1));
+    assert_handles_invalid(|h| pool.get(h).is_some(), handles);
+    let kept = pool.allocate();
+    assert!(!pool.get(kept).unwrap().contains(TestEnum::Var3));
+    assert_eq!(pool.get(kept).unwrap().allocated_size(), sizes[2]);
+    let fresh = pool.allocate();
+    assert!(pool.get(fresh).unwrap().allocated_size() < pool.get(kept).unwrap().allocated_size());
+    pool.release(kept);
+    pool.release(fresh);
+
+    let (handles, sizes) = enum_var_map_pool_three_sizes(&mut pool);
+    pool.clear(ClearStrategy::KeepSmallestN(1));
+    assert_handles_invalid(|h| pool.get(h).is_some(), handles);
+    let h = pool.allocate();
+    assert_eq!(pool.get(h).unwrap().allocated_size(), sizes[0]);
+    pool.release(h);
+
+    let (handles, sizes) = enum_var_map_pool_three_sizes(&mut pool);
+    pool.clear(ClearStrategy::KeepNClosestToAverage(1));
+    assert_handles_invalid(|h| pool.get(h).is_some(), handles);
+    let h = pool.allocate();
+    assert_eq!(pool.get(h).unwrap().allocated_size(), sizes_closest_to_average(sizes));
+    pool.release(h);
+
+    let (handles, sizes) = enum_var_map_pool_three_sizes(&mut pool);
+    pool.clear(ClearStrategy::KeepLargestN(2));
+    assert_handles_invalid(|h| pool.get(h).is_some(), handles);
+    let a = pool.allocate();
+    let b = pool.allocate();
+    let mut kept = [pool.get(a).unwrap().allocated_size(), pool.get(b).unwrap().allocated_size()];
+    let mut expected = [sizes[1], sizes[2]];
+    kept.sort();
+    expected.sort();
+    assert_eq!(kept, expected);
+    pool.release(a);
+    pool.release(b);
+
+    let (handles, _) = enum_var_map_pool_three_sizes(&mut pool);
+    pool.clear(ClearStrategy::FreeEntireMemory);
+    assert_handles_invalid(|h| pool.get(h).is_some(), handles);
+    let h = pool.allocate();
+    assert!(!pool.get(h).unwrap().contains(TestEnum::Var1));
+    assert!(!pool.get(h).unwrap().contains(TestEnum::Var3));
+}
+
+#[test]
+fn check_var_map_pool_allocate_release() {
+    let mut pool = VarMapPool::new();
+
+    let a = pool.allocate();
+    let a_copy = a;
+    assert_eq!(a, a_copy);
+    pool.get_mut(a).unwrap().set(var!("port"), 8080u16);
+    assert_eq!(pool.get(a).unwrap().get_u16(var!("port")), Some(8080));
+    assert_eq!(pool.get(a_copy).unwrap().get_u16(var!("port")), Some(8080));
+
+    let b = pool.allocate();
+    assert_ne!(a, b);
+    pool.get_mut(b).unwrap().set(var!("port"), 443u16);
+    assert_eq!(pool.get(a).unwrap().get_u16(var!("port")), Some(8080));
+    assert_eq!(pool.get(b).unwrap().get_u16(var!("port")), Some(443));
+
+    pool.release(a);
+    assert!(pool.get(a).is_none());
+    assert!(pool.get_mut(a_copy).is_none());
+    assert_eq!(pool.get(b).unwrap().get_u16(var!("port")), Some(443));
+
+    pool.release(a);
+    pool.release(a_copy);
+
+    let c = pool.allocate();
+    assert!(pool.get(c).unwrap().get_u16(var!("port")).is_none());
+    assert!(pool.get(a).is_none());
+    pool.get_mut(c).unwrap().set(var!("host"), "localhost");
+    assert_eq!(pool.get(c).unwrap().get_str(var!("host")), Some("localhost"));
+
+    pool.release(b);
+    pool.release(c);
+    assert!(pool.get(b).is_none());
+    assert!(pool.get(c).is_none());
+}
+
+#[test]
+fn check_str_var_map_pool_allocate_release() {
+    let mut pool = StrVarMapPool::new();
+
+    let a = pool.allocate();
+    pool.get_mut(a).unwrap().set("name", "alice");
+    assert_eq!(pool.get(a).unwrap().get_str("name"), Some("alice"));
+    assert!(pool.get(a).unwrap().contains("name"));
+
+    let b = pool.allocate();
+    pool.get_mut(b).unwrap().set("name", "bob");
+    assert_eq!(pool.get(a).unwrap().get_str("name"), Some("alice"));
+    assert_eq!(pool.get(b).unwrap().get_str("name"), Some("bob"));
+
+    pool.release(a);
+    assert!(pool.get(a).is_none());
+    pool.release(a);
+
+    let c = pool.allocate();
+    assert!(!pool.get(c).unwrap().contains("name"));
+    assert!(pool.get(a).is_none());
+
+    pool.release(b);
+    pool.release(c);
+}
+
+#[test]
+fn check_enum_var_map_pool_allocate_release() {
+    let mut pool = EnumVarMapPool::<TestEnum>::new();
+
+    let a = pool.allocate();
+    pool.get_mut(a).unwrap().set(TestEnum::Var1, 1u8);
+    assert_eq!(pool.get(a).unwrap().get_u8(TestEnum::Var1), Some(1));
+
+    let b = pool.allocate();
+    pool.get_mut(b).unwrap().set(TestEnum::Var2, 2u32);
+    assert_eq!(pool.get(a).unwrap().get_u8(TestEnum::Var1), Some(1));
+    assert_eq!(pool.get(b).unwrap().get_u32(TestEnum::Var2), Some(2));
+    assert!(!pool.get(b).unwrap().contains(TestEnum::Var1));
+
+    pool.release(a);
+    assert!(pool.get(a).is_none());
+    assert_eq!(pool.get(b).unwrap().get_u32(TestEnum::Var2), Some(2));
+
+    let c = pool.allocate();
+    assert!(!pool.get(c).unwrap().contains(TestEnum::Var1));
+    assert!(pool.get(a).is_none());
+
+    pool.release(b);
+    pool.release(c);
+}
