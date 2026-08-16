@@ -59,7 +59,7 @@ pub struct VarMap {
 
 impl VarMap {
     /// Creates an empty map.
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             arena: Arena::new(),
             hashes: Vec::new(),

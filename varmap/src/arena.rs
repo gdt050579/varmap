@@ -15,7 +15,7 @@ pub(crate) struct Arena {
     current_offset: usize,
 }
 impl Arena {
-    pub(crate) fn new() -> Self {
+    pub(crate) const fn new() -> Self {
         Self {
             data: Vec::new(),
             current_offset: 0,
