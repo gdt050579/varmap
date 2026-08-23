@@ -254,6 +254,11 @@ impl VarMapPool {
         self.pool.clear(strategy)
     }
 }
+impl Default for VarMapPool {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 /// Pool of reusable [`StrVarMap`] values.
 ///
@@ -317,6 +322,11 @@ impl StrVarMapPool {
     /// kept maps empty while preserving capacity for later [`allocate`](Self::allocate)s.
     pub fn clear(&mut self, strategy: ClearStrategy) {
         self.pool.clear(strategy)
+    }
+}
+impl Default for StrVarMapPool {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -389,5 +399,10 @@ impl<K: EnumVarMapKey> EnumVarMapPool<K> {
     /// kept maps empty while preserving capacity for later [`allocate`](Self::allocate)s.
     pub fn clear(&mut self, strategy: ClearStrategy) {
         self.pool.clear(strategy)
+    }
+}
+impl<K: EnumVarMapKey> Default for EnumVarMapPool<K> {
+    fn default() -> Self {
+        Self::new()
     }
 }

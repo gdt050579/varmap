@@ -1,5 +1,5 @@
-use std::net::Ipv4Addr;
 use crate::{Arena, ArenaIndex, MemAlign, VarMapValue};
+use std::net::Ipv4Addr;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) enum ValueKind {
@@ -129,13 +129,7 @@ impl<'a> ValueMut<'a> {
     }
     pub fn as_bytes_mut<T: VarMapValue>(&mut self) -> Option<&mut [u8]> {
         let arena_index = match self.kind_mut() {
-            ValueKind::Custom(arena_index, type_id) => {
-                if *type_id == T::TYPE_ID {
-                    Some(*arena_index)
-                } else {
-                    return None;
-                }
-            }
+            ValueKind::Custom(arena_index, type_id) if *type_id == T::TYPE_ID => Some(*arena_index),
             _ => return None,
         };
         if let Some(arena_index) = arena_index {
