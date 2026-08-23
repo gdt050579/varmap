@@ -55,7 +55,8 @@ macro_rules! impl_getters {
 ///
 /// [`VarMap::new`] is `const`, so empty maps can be constructed in `const` / `static` contexts.
 ///
-/// `VarMap` is [`Sync`]. Use [`Self::as_readonly`] to share a read-only view across threads.
+/// `VarMap` is [`Sync`]. Use [`Self::as_readonly`] for concurrent reads, or
+/// [`Self::into_shared`] when threads must also write.
 pub struct VarMap {
     arena: Arena,
     hashes: Vec<Hash>,
@@ -247,6 +248,13 @@ impl VarMap {
         Readonly::new(self)
     }
 
+    /// Consumes this map and returns a [`Shared`] handle for concurrent reads and writes.
+    ///
+    /// Clones of the handle all refer to the same map (`Arc<RwLock<_>>`). Call
+    /// [`Shared::read`] or [`Shared::write`] from any thread. Unlike [`Self::as_readonly`],
+    /// the handle owns the map and is `'static`.
+    ///
+    /// See [`Shared`].
     #[inline(always)]
     pub fn into_shared(self) -> Shared<Self> {
         Shared::new(self)

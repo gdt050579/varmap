@@ -1,15 +1,42 @@
 use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-/// A thread-safe, cheaply-cloneable handle to a `T`, allowing concurrent
-/// reads and synchronized (exclusive) writes.
+/// A thread-safe, cheaply cloneable handle to a map (or any `T`).
 ///
-/// Backed by `Arc<RwLock<T>>`: cloning bumps a reference count rather than
-/// copying the map, so every clone points at the same underlying data. Any
-/// number of readers may hold the map at once; a writer gets exclusive access.
+/// Created by [`crate::VarMap::into_shared`], [`crate::StrVarMap::into_shared`], or
+/// [`crate::EnumVarMap::into_shared`]. Unlike [`crate::Readonly`], this **owns** the map: clones
+/// share one `Arc<RwLock<T>>`, so they are `'static` and can be sent to
+/// `thread::spawn` as well as [`std::thread::scope`].
 ///
-/// Access goes through [`Shared::read`] / [`Shared::write`], which return lock
-/// guards. The guards `Deref` (and `DerefMut`, for the write guard) to `T`, so
-/// you call the map's own methods through them.
+/// Any number of readers may hold [`read`](Self::read) at once; [`write`](Self::write)
+/// is exclusive. The guards `Deref` (and `DerefMut` for write) to `T`, so you call
+/// the map's own getters and setters through them. Drop the guard to release the lock.
+///
+/// Cloning a handle only bumps the `Arc` count; it does not clone `T`.
+/// [`try_unwrap`](Self::try_unwrap) recovers the inner value when this is the last handle.
+///
+/// A writer that panics poisons the lock. Later `read` / `write` then panic.
+///
+/// ```
+/// use std::thread;
+/// use varmap::StrVarMap;
+///
+/// let mut map = StrVarMap::new();
+/// map.set("count", 0u32);
+/// let shared = map.into_shared();
+///
+/// thread::scope(|s| {
+///     let a = shared.clone();
+///     let b = shared.clone();
+///     s.spawn(move || {
+///         a.write().update::<u32>("count", |n| *n += 1);
+///     });
+///     s.spawn(move || {
+///         b.write().update::<u32>("count", |n| *n += 1);
+///     });
+/// });
+///
+/// assert_eq!(shared.read().get_u32("count"), Some(2));
+/// ```
 pub struct Shared<T> {
     inner: Arc<RwLock<T>>,
 }
@@ -79,8 +106,7 @@ impl<T> Shared<T> {
     }
 }
 
-// Manual `Clone` so `T: Clone` is NOT required — cloning a handle only bumps
-// the `Arc` refcount; it never clones `T`.
+/// Cloning a handle shares the same map; `T` is not cloned.
 impl<T> Clone for Shared<T> {
     #[inline]
     fn clone(&self) -> Self {

@@ -1,8 +1,8 @@
 /// A [`Sync`] read-only view of a map, safe to copy onto other threads.
 ///
-/// [`VarMap`], [`StrVarMap`], and [`struct@EnumVarMap`] are `Send` + `Sync`: every stored
+/// [`crate::VarMap`], [`crate::StrVarMap`], and [`struct@crate::EnumVarMap`] are `Send` + `Sync`: every stored
 /// value is `Copy` (or a borrow from the arena), and every mutating method takes `&mut self`.
-/// Shared `&` access is therefore data-race-free. [`VarMap::as_readonly`] (and the same
+/// Shared `&` access is therefore data-race-free. [`crate::VarMap::as_readonly`] (and the same
 /// method on the other map types) wraps that `&self` so the intent is explicit.
 ///
 /// `Readonly` is `Copy`, `Clone`, `Send`, and `Sync`. It implements [`Deref`] to the inner
@@ -10,7 +10,9 @@
 /// `DerefMut`; writers must use the original map after every view has been dropped.
 ///
 /// The view borrows the map, so it is not `'static`. Use [`std::thread::scope`] (not
-/// `thread::spawn`) when sharing it across threads.
+/// `thread::spawn`) when sharing it across threads. For concurrent writes as well as
+/// reads, consume the map with [`crate::VarMap::into_shared`] (or the same method on the
+/// other map types) and use [`crate::Shared`].
 ///
 /// ```
 /// use std::thread;

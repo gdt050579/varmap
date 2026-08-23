@@ -25,6 +25,10 @@
 //! `Copy` + `Send` + `Sync` and can be shared across threads for concurrent reads. Mutation
 //! still requires `&mut self`, so it cannot overlap those views.
 //!
+//! For concurrent **reads and writes**, [`VarMap::into_shared`] consumes the map into a
+//! [`Shared`] handle (`Arc<RwLock<_>>`). Clones share the same instance; use
+//! [`Shared::read`] / [`Shared::write`] from any thread.
+//!
 //! # Supported values
 //!
 //! Built-in types: integers, floats, `bool`, `char`, `&str`, `&[u8]`, IP address types, and [`std::time::Duration`].

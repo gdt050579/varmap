@@ -22,7 +22,8 @@ macro_rules! impl_getters {
 /// guidance.
 ///
 /// `EnumVarMap<E>` is [`Sync`] when `E` is (`E` is `Copy` for [`EnumVarMapKey`]). Use
-/// [`Self::as_readonly`] to share a read-only view across threads.
+/// [`Self::as_readonly`] for concurrent reads, or [`Self::into_shared`] when threads
+/// must also write.
 pub struct EnumVarMap<E: EnumVarMapKey> {
     arena: Arena,
     values: Vec<Option<ValueKind>>,
@@ -145,6 +146,7 @@ impl<E: EnumVarMapKey> EnumVarMap<E> {
         Readonly::new(self)
     }
 
+    /// Consumes this map and returns a [`Shared`] handle. See [`VarMap::into_shared`].
     #[inline(always)]
     pub fn into_shared(self) -> Shared<Self> {
         Shared::new(self)

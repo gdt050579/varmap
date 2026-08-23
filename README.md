@@ -43,6 +43,30 @@ thread::scope(|s| {
 });
 ```
 
+When threads must **write** as well, consume the map with `into_shared()`. Clones share one `Arc<RwLock<_>>` and are `'static` (so `thread::spawn` is fine). Use `read()` / `write()`; drop the guard to release the lock.
+
+```rust
+use std::thread;
+use varmap::StrVarMap;
+
+let mut map = StrVarMap::new();
+map.set("count", 0u32);
+let shared = map.into_shared();
+
+thread::scope(|s| {
+    let a = shared.clone();
+    let b = shared.clone();
+    s.spawn(move || {
+        a.write().update::<u32>("count", |n| *n += 1);
+    });
+    s.spawn(move || {
+        b.write().update::<u32>("count", |n| *n += 1);
+    });
+});
+
+assert_eq!(shared.read().get_u32("count"), Some(2));
+```
+
 ## Installation
 
 Add to your `Cargo.toml`:
@@ -231,6 +255,12 @@ assert_eq!(map.contains(ConfigKey::Port), true);
 ## Readonly
 
 `as_readonly()` on [`VarMap`](#varmap), [`StrVarMap`](#strvarmap), or [`EnumVarMap`](#enumvarmap) returns a `Readonly` wrapper: `Copy` + `Send` + `Sync`, with `Deref` to the map so all getters work. There is no mutable access through the view. See [Concurrent reads](#concurrent-reads).
+
+## Shared
+
+`into_shared()` consumes the map and returns a `Shared<T>` handle (`Arc<RwLock<T>>`). Cloning the handle shares the same instance; it does not clone the map. Call `read()` / `write()` (or `try_read` / `try_write`) from any thread. `handle_count()` is the number of live handles; `try_unwrap()` recovers the map when this is the last one.
+
+Prefer [`Readonly`](#readonly) when threads only need to read. Use `Shared` when they must also `set` / `update`. See [Concurrent reads](#concurrent-reads).
 
 ---
 
