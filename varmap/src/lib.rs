@@ -20,6 +20,11 @@
 //! or [`EnumVarMap::clear`] to reset a map between logical snapshots; `clear` retains allocated
 //! capacity for later writes.
 //!
+//! All three maps are [`Sync`]. After populating a map, [`VarMap::as_readonly`] (and the same
+//! method on [`StrVarMap`] and [`struct@EnumVarMap`]) yields a [`Readonly`] view that is
+//! `Copy` + `Send` + `Sync` and can be shared across threads for concurrent reads. Mutation
+//! still requires `&mut self`, so it cannot overlap those views.
+//!
 //! # Supported values
 //!
 //! Built-in types: integers, floats, `bool`, `char`, `&str`, `&[u8]`, IP address types, and [`std::time::Duration`].
@@ -56,8 +61,8 @@ mod tests;
 
 pub(crate) use arena::{Arena, ArenaIndex};
 pub(crate) use value::ValueKind;
-pub(crate) use readonly::Readonly;
 
+pub use readonly::Readonly;
 pub use mem_align::MemAlign;
 pub use var_map::VarMap;
 pub use var_map::Key;

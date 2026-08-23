@@ -25,6 +25,24 @@ The internal arena is **append-only**. Calling `set` on an existing key updates 
 
 Use `clear()` when you need a fresh binding of all keys (for example between requests or benchmark iterations). That resets the arena and removes current entries while preserving already allocated capacity for future writes. To recycle that capacity across many short-lived maps, use a [pool](#pools).
 
+### Concurrent reads
+
+All three maps are `Sync`. Mutation always takes `&mut self`, so shared `&` access is read-only and data-race-free. After you finish writing, call `as_readonly()` and copy the [`Readonly`](#readonly) view to other threads. The view borrows the map (use `std::thread::scope`, not `thread::spawn`).
+
+```rust
+use std::thread;
+use varmap::StrVarMap;
+
+let mut map = StrVarMap::new();
+map.set("port", 8080u16);
+
+let ro = map.as_readonly();
+thread::scope(|s| {
+    s.spawn(|| assert_eq!(ro.get_u16("port"), Some(8080)));
+    s.spawn(|| assert_eq!(ro.get_u16("port"), Some(8080)));
+});
+```
+
 ## Installation
 
 Add to your `Cargo.toml`:
@@ -207,6 +225,12 @@ assert_eq!(map.contains(ConfigKey::Port), true);
 ```
 
 `EnumVarMap` owns its own arena (unlike `StrVarMap`, which delegates to an inner `VarMap`). Memory for every enum variant slot is reserved up front, including variants that have not been set yet.
+
+---
+
+## Readonly
+
+`as_readonly()` on [`VarMap`](#varmap), [`StrVarMap`](#strvarmap), or [`EnumVarMap`](#enumvarmap) returns a `Readonly` wrapper: `Copy` + `Send` + `Sync`, with `Deref` to the map so all getters work. There is no mutable access through the view. See [Concurrent reads](#concurrent-reads).
 
 ---
 

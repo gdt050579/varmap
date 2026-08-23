@@ -33,6 +33,8 @@ macro_rules! impl_getters {
 ///
 /// Each `set` / `get` hashes the name with FNV-1a and delegates to an internal [`VarMap`].
 /// For static names, prefer [`VarMap`] with [`var!`](crate::var) for better performance.
+///
+/// `StrVarMap` is [`Sync`]. Use [`Self::as_readonly`] to share a read-only view across threads.
 pub struct StrVarMap {
     map: VarMap,
 }
@@ -105,6 +107,7 @@ impl StrVarMap {
         self.map.allocated_size()
     }
 
+    /// Returns a [`Sync`] read-only view of this map. See [`VarMap::as_readonly`].
     #[inline(always)]
     pub fn as_readonly(&self) -> Readonly<'_, Self> {
         Readonly::new(self)

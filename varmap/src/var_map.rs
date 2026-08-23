@@ -54,6 +54,8 @@ macro_rules! impl_getters {
 /// See the [crate-level documentation](crate) for the intended write-once-read-many usage model.
 ///
 /// [`VarMap::new`] is `const`, so empty maps can be constructed in `const` / `static` contexts.
+///
+/// `VarMap` is [`Sync`]. Use [`Self::as_readonly`] to share a read-only view across threads.
 pub struct VarMap {
     arena: Arena,
     hashes: Vec<Hash>,
@@ -233,6 +235,13 @@ impl VarMap {
         self.arena.allocated_size() + self.hashes.capacity() * std::mem::size_of::<Hash>() + self.values.capacity() * std::mem::size_of::<ValueKind>()
     }
 
+    /// Returns a [`Sync`] read-only view of this map.
+    ///
+    /// The view is `Copy`, `Send`, and `Sync`. Pass copies to other threads for concurrent
+    /// reads (getters and [`contains`](Self::contains) only). The borrow checker prevents
+    /// mutation of `self` while any view is still alive.
+    ///
+    /// The view is not `'static`; use [`std::thread::scope`] when spawning. See [`Readonly`].
     #[inline(always)]
     pub fn as_readonly(&self) -> Readonly<'_, Self> {
         Readonly::new(self)

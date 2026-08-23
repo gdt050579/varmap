@@ -20,6 +20,9 @@ macro_rules! impl_getters {
 /// Each variant has a fixed slot for **O(1)** access without hashing. One slot per variant is
 /// reserved at creation (`E::INDEX_COUNT`). See the [crate-level documentation](crate) for usage
 /// guidance.
+///
+/// `EnumVarMap<E>` is [`Sync`] when `E` is (`E` is `Copy` for [`EnumVarMapKey`]). Use
+/// [`Self::as_readonly`] to share a read-only view across threads.
 pub struct EnumVarMap<E: EnumVarMapKey> {
     arena: Arena,
     values: Vec<Option<ValueKind>>,
@@ -134,6 +137,9 @@ impl<E: EnumVarMapKey> EnumVarMap<E> {
         self.arena.allocated_size() + self.values.len() * std::mem::size_of::<Option<ValueKind>>()
     }
 
+    /// Returns a [`Sync`] read-only view of this map. See [`VarMap::as_readonly`].
+    ///
+    /// Requires `E: Sync`, which holds for typical `Copy` key enums.
     #[inline(always)]
     pub fn as_readonly(&self) -> Readonly<'_, Self> {
         Readonly::new(self)
