@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use crate::*;
 
 macro_rules! impl_varmap_numeric {
@@ -52,21 +54,14 @@ impl VarMapValue for u128 {
 
     fn to_value<'a>(&self, builder: &'a mut ValueBuilder<'a>) -> Value<'a> {
         Value::new(
-            ValueKind::U128(
-                builder
-                    .arena_mut()
-                    .store(self.to_le_bytes().as_slice(), MemAlign::Bits8),
-            ),
+            ValueKind::U128(builder.arena_mut().store(self.to_le_bytes().as_slice(), MemAlign::Bits8)),
             builder.arena(),
         )
     }
 
     fn from_value<'a>(value: &Value<'a>) -> Option<u128> {
         match value.kind() {
-            ValueKind::U128(index) => value
-                .arena()
-                .get(*index)
-                .map(|bytes| u128::from_le_bytes(bytes.try_into().unwrap())),
+            ValueKind::U128(index) => value.arena().get(*index).map(|bytes| u128::from_le_bytes(bytes.try_into().unwrap())),
             _ => None,
         }
     }
@@ -98,21 +93,14 @@ impl VarMapValue for i128 {
 
     fn to_value<'a>(&self, builder: &'a mut ValueBuilder<'a>) -> Value<'a> {
         Value::new(
-            ValueKind::I128(
-                builder
-                    .arena_mut()
-                    .store(self.to_le_bytes().as_slice(), MemAlign::Bits8),
-            ),
+            ValueKind::I128(builder.arena_mut().store(self.to_le_bytes().as_slice(), MemAlign::Bits8)),
             builder.arena(),
         )
     }
 
     fn from_value<'a>(value: &Value<'a>) -> Option<i128> {
         match value.kind() {
-            ValueKind::I128(index) => value
-                .arena()
-                .get(*index)
-                .map(|bytes| i128::from_le_bytes(bytes.try_into().unwrap())),
+            ValueKind::I128(index) => value.arena().get(*index).map(|bytes| i128::from_le_bytes(bytes.try_into().unwrap())),
             _ => None,
         }
     }
@@ -133,6 +121,54 @@ impl VarMapValue for i128 {
         }
         let n = unsafe { &mut *(bytes.as_mut_ptr() as *mut i128) };
         f(n);
+        true
+    }
+}
+
+impl VarMapValue for Duration {
+    type Decoded<'a> = Duration;
+    const TYPE_ID: u32 = 0;
+
+    fn to_value<'a>(&self, builder: &'a mut ValueBuilder<'a>) -> Value<'a> {
+        let bytes = unsafe {
+            std::slice::from_raw_parts((self as *const Duration).cast::<u8>(), std::mem::size_of::<Duration>())
+        };
+        let align = MemAlign::from_align(std::mem::align_of::<Duration>()).unwrap();
+        Value::new(
+            ValueKind::Duration(builder.arena_mut().store(bytes, align)),
+            builder.arena(),
+        )
+    }
+
+    fn from_value<'a>(value: &Value<'a>) -> Option<Duration> {
+        match value.kind() {
+            ValueKind::Duration(index) => {
+                let bytes = value.arena().get(*index)?;
+                if bytes.len() != std::mem::size_of::<Duration>() {
+                    return None;
+                }
+                Some(unsafe { std::ptr::read(bytes.as_ptr().cast::<Duration>()) })
+            }
+            _ => None,
+        }
+    }
+
+    fn update<F>(value: &mut ValueMut<'_>, f: F) -> bool
+    where
+        F: FnOnce(&mut Duration),
+    {
+        let index = match *value.kind_mut() {
+            ValueKind::Duration(index) => index,
+            _ => return false,
+        };
+        let Some(bytes) = value.arena_mut().get_mut(index) else {
+            return false;
+        };
+        if bytes.len() != std::mem::size_of::<Duration>() {
+            return false;
+        }
+        let duration = unsafe { &mut *bytes.as_mut_ptr().cast::<Duration>() };
+        f(duration);
         true
     }
 }

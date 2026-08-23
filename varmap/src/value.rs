@@ -24,6 +24,7 @@ pub(crate) enum ValueKind {
     String(ArenaIndex),
     SmallBytes([u8; 14], u8),
     Bytes(ArenaIndex),
+    Duration(ArenaIndex),
     Custom(ArenaIndex, u32),
 }
 

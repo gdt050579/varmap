@@ -2,6 +2,7 @@ use crate::*;
 use crate::var_map::Key;
 use std::fmt::Debug;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::time::Duration;
 
 fn check_type_value<T>(obj: T, kind: ValueKind)
 where
@@ -98,6 +99,18 @@ fn check_value_u128() {
     assert_eq!(*value.kind(), ValueKind::U128(ArenaIndex::new(0, 16))); // first offset in the arena index
     let value2 = u128::from_value(&value);
     assert_eq!(value2, Some(18446744073709551615u128));
+}
+
+#[test]
+fn check_value_duration() {
+    let d = Duration::new(3, 150_000_000);
+    check_type_value(d, ValueKind::Duration(ArenaIndex::new(0, std::mem::size_of::<Duration>() as u32)));
+
+    let mut map = StrVarMap::new();
+    map.set("timeout", d);
+    assert_eq!(map.get::<Duration>("timeout"), Some(d));
+    assert!(map.update::<Duration>("timeout", |t| *t += Duration::from_millis(250)));
+    assert_eq!(map.get::<Duration>("timeout"), Some(Duration::new(3, 400_000_000)));
 }
 
 #[test]
