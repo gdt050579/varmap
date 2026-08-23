@@ -119,7 +119,7 @@ impl VarMap {
     /// Updates the numeric value at `key` in place when supported for `T`.
     ///
     /// Returns `false` if `key` is missing, the stored type is not `T`, or `T` does not support
-    /// in-place updates (see [`VarMapValue::update_in_place`]).
+    /// in-place updates (see [`VarMapValue::update`]).
     pub fn update<T: VarMapValue>(&mut self, key: Key, f: impl FnOnce(&mut T)) -> bool {
         let hvalue = key.hash & Hash::HASH_MASK;
         let hash_index = self.hashes.partition_point(|h| h.hash() < hvalue);
@@ -139,14 +139,25 @@ impl VarMap {
 
     /// Updates the value at `key` in place, or inserts [`Default::default`] if `key` is missing.
     ///
-    /// If `key` is already present, this is the same as [`Self::update`]: `f` is applied when the
-    /// stored type is `T` and `T` supports in-place updates (see [`VarMapValue::update`]).
+    /// `T` must implement [`Default`].
     ///
-    /// If `key` is missing, `T::default()` is inserted and this returns `true`. `f` is **not**
-    /// called in that case.
+    /// - If `key` is missing, `T::default()` is inserted and this returns `true`. `f` is **not**
+    ///   called.
+    /// - If `key` is present, this is the same as [`Self::update`]: `f` runs when the stored type
+    ///   is `T` and `T` supports in-place updates (see [`VarMapValue::update`]).
     ///
     /// Returns `false` if `key` is present but the stored type is not `T`, or `T` does not support
     /// in-place updates.
+    ///
+    /// ```
+    /// use varmap::{var, Key, VarMap};
+    ///
+    /// let mut map = VarMap::new();
+    /// assert!(map.update_or_default::<u32>(var!("count"), |_| {}));
+    /// assert_eq!(map.get_u32(var!("count")), Some(0));
+    /// assert!(map.update_or_default::<u32>(var!("count"), |n| *n += 1));
+    /// assert_eq!(map.get_u32(var!("count")), Some(1));
+    /// ```
     pub fn update_or_default<T>(&mut self, key: Key, f: impl FnOnce(&mut T)) -> bool
     where
         T: VarMapValue + Default,

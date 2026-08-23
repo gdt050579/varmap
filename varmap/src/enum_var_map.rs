@@ -70,16 +70,15 @@ impl<E: EnumVarMapKey> EnumVarMap<E> {
         }
     }
 
-    /// Updates the value at `key` in place when supported for `T`.
+    /// Updates the value at `key` in place, or inserts [`Default::default`] if the slot is empty.
     ///
-    /// Returns `false` if `key` is missing, the stored type is not `T`, or `T` does not support
-    /// in-place updates (see [`VarMapValue::update`]).
+    /// `T` must implement [`Default`].
     ///
-    /// If `key` is missing, `T::default()` is inserted and this returns `true`. `f` is **not**
-    /// called in that case.
-    ///
-    /// Returns `false` if `key` is present but the stored type is not `T`, or `T` does not support
-    /// in-place updates.
+    /// - If the slot is empty, `T::default()` is inserted and this returns `true`. `f` is **not**
+    ///   called.
+    /// - If the slot is set, `f` is applied when the stored type is `T` and `T` supports in-place
+    ///   updates (see [`VarMapValue::update`]). This method still returns `true` even if that
+    ///   update does not apply (wrong stored type, or `T` cannot be updated in place).
     pub fn update_or_default<T: VarMapValue + Default>(&mut self, key: E, f: impl FnOnce(&mut T)) -> bool {
         let index = key.to_index() as usize;
         if let Some(kind) = &mut self.values[index] {

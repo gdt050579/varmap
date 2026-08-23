@@ -116,6 +116,20 @@ assert_eq!(map.get::<Stats>("stats").map(|s| s.hits), Some(2));
 
 `update` returns `false` if the key is missing, the stored type does not match, or the type cannot be updated in place.
 
+`update_or_default` is the same when the key already exists. If the key is **missing**, it inserts `T::default()` and returns `true` **without** calling the closure. `T` must implement `Default`.
+
+```rust
+use varmap::StrVarMap;
+
+let mut map = StrVarMap::new();
+
+assert!(map.update_or_default::<u32>("count", |_| {}));
+assert_eq!(map.get_u32("count"), Some(0));
+
+assert!(map.update_or_default::<u32>("count", |n| *n += 5));
+assert_eq!(map.get_u32("count"), Some(5));
+```
+
 ### Other operations
 
 ```rust
