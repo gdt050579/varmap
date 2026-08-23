@@ -156,6 +156,68 @@ fn check_update_numeric() {
 }
 
 #[test]
+fn check_var_map_update_or_default() {
+    let mut map = VarMap::new();
+    let count = var!("count");
+    let name = var!("name");
+
+    let mut called = false;
+    assert!(map.update_or_default::<u32>(count, |n| {
+        called = true;
+        *n += 1;
+    }));
+    assert!(!called);
+    assert_eq!(map.get_u32(count), Some(0));
+
+    assert!(map.update_or_default::<u32>(count, |n| *n += 5));
+    assert_eq!(map.get_u32(count), Some(5));
+
+    map.set(name, "alice");
+    assert!(!map.update_or_default::<u32>(name, |n| *n += 1));
+    assert_eq!(map.get_str(name), Some("alice"));
+}
+
+#[test]
+fn check_str_var_map_update_or_default() {
+    let mut map = StrVarMap::new();
+
+    let mut called = false;
+    assert!(map.update_or_default::<u32>("count", |n| {
+        called = true;
+        *n += 1;
+    }));
+    assert!(!called);
+    assert_eq!(map.get_u32("count"), Some(0));
+
+    assert!(map.update_or_default::<u32>("count", |n| *n += 5));
+    assert_eq!(map.get_u32("count"), Some(5));
+
+    map.set("name", "alice");
+    assert!(!map.update_or_default::<u32>("name", |n| *n += 1));
+    assert_eq!(map.get_str("name"), Some("alice"));
+}
+
+#[test]
+fn check_enum_var_map_update_or_default() {
+    let mut map = EnumVarMap::<TestEnum>::new();
+
+    let mut called = false;
+    assert!(map.update_or_default::<u32>(TestEnum::Var1, |n| {
+        called = true;
+        *n += 1;
+    }));
+    assert!(!called);
+    assert_eq!(map.get_u32(TestEnum::Var1), Some(0));
+
+    assert!(map.update_or_default::<u32>(TestEnum::Var1, |n| *n += 5));
+    assert_eq!(map.get_u32(TestEnum::Var1), Some(5));
+
+    map.set(TestEnum::Var2, "alice");
+    assert!(map.update_or_default::<u32>(TestEnum::Var2, |n| *n += 1));
+    assert_eq!(map.get_str(TestEnum::Var2), Some("alice"));
+}
+
+#[test]
 fn check_str_var_map() {
     let mut map = StrVarMap::new();
     map.set("var1", 1u8);

@@ -137,6 +137,36 @@ impl VarMap {
         T::update(&mut value, f)
     }
 
+    /// Updates the value at `key` in place, or inserts [`Default::default`] if `key` is missing.
+    ///
+    /// If `key` is already present, this is the same as [`Self::update`]: `f` is applied when the
+    /// stored type is `T` and `T` supports in-place updates (see [`VarMapValue::update`]).
+    ///
+    /// If `key` is missing, `T::default()` is inserted and this returns `true`. `f` is **not**
+    /// called in that case.
+    ///
+    /// Returns `false` if `key` is present but the stored type is not `T`, or `T` does not support
+    /// in-place updates.
+    pub fn update_or_default<T>(&mut self, key: Key, f: impl FnOnce(&mut T)) -> bool
+    where
+        T: VarMapValue + Default,
+    {
+        let hvalue = key.hash & Hash::HASH_MASK;
+        let hash_index = self.hashes.partition_point(|h| h.hash() < hvalue);
+    
+        let value_index = match self.hashes.get(hash_index) {
+            Some(h) if h.hash() == hvalue => h.index(),
+            _ => {
+                self.set(key, T::default());
+                return true;
+            }
+        };
+    
+        let kind = &mut self.values[value_index];
+        let mut value = ValueMut::view(kind, &mut self.arena);
+        T::update(&mut value, f)
+    }
+
     /// Returns the value for `key` decoded as `V`.
     ///
     /// Returns `None` if `key` is missing or the stored type does not match `V`.
