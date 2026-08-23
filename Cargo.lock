@@ -18,7 +18,7 @@ dependencies = [
 
 [[package]]
 name = "varmap"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "varmap_proc_macro 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
