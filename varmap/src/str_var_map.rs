@@ -1,4 +1,5 @@
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::time::Duration;
 
 use crate::*;
 use crate::var_map::Key;
@@ -85,6 +86,7 @@ impl StrVarMap {
         get_ip => IpAddr,
         get_ipv4 => Ipv4Addr,
         get_ipv6 => Ipv6Addr,
+        get_duration => Duration,
     }
 
     /// Returns `true` if `var_name` has a value (any type).

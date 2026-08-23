@@ -1,5 +1,6 @@
 use crate::*;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::time::Duration;
 
 /// Opaque key for [`VarMap`], holding a 64-bit hash.
 ///
@@ -175,6 +176,7 @@ impl VarMap {
         get_ip => IpAddr,
         get_ipv4 => Ipv4Addr,
         get_ipv6 => Ipv6Addr,
+        get_duration => Duration,
     }
 
     /// Returns `true` if `key` has a value (any type).

@@ -22,7 +22,7 @@
 //!
 //! # Supported values
 //!
-//! Built-in types: integers, floats, `bool`, `char`, `&str`, `&[u8]`, and IP address types.
+//! Built-in types: integers, floats, `bool`, `char`, `&str`, `&[u8]`, IP address types, and [`std::time::Duration`].
 //! Strings and byte slices up to 14 bytes are stored inline; longer payloads use the arena.
 //!
 //! Custom `Copy` types (alignment 1–16) can use `#[derive(VarMapValue)]`.

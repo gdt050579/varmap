@@ -14,7 +14,7 @@ Three map types share the same value encoding and getter API, but differ in how 
 
 VarMap is aimed at **write once, read many** workloads: you populate keys (configuration, request context, parsed attributes) and then read them repeatedly with cheap typed getters and borrowed `&str` / `&[u8]` results.
 
-The internal arena is **append-only**. Calling `set` on an existing key updates the map entry, but any previous arena allocation for that key is **not** reclaimed. Each overwrite of an arena-backed value (strings and byte slices longer than 14 bytes, `i128` / `u128`, `Ipv6Addr`, custom types, etc.) adds new arena space while the old payload remains until the whole map is reset. Scalars and short strings (≤14 bytes) live entirely in the fixed 16-byte cell, so overwriting those does not grow the arena.
+The internal arena is **append-only**. Calling `set` on an existing key updates the map entry, but any previous arena allocation for that key is **not** reclaimed. Each overwrite of an arena-backed value (strings and byte slices longer than 14 bytes, `i128` / `u128`, `Ipv6Addr`, `Duration`, custom types, etc.) adds new arena space while the old payload remains until the whole map is reset. Scalars and short strings (≤14 bytes) live entirely in the fixed 16-byte cell, so overwriting those does not grow the arena.
 
 | Pattern                                                            | Suitability                                                                |
 | ------------------------------------------------------------------ | -------------------------------------------------------------------------- |
@@ -45,6 +45,7 @@ Built-in types (via `set` / `get` / typed getters):
 - `bool`, `char`
 - `&str`, `&[u8]` (stored in the arena; returned as borrows)
 - `IpAddr`, `Ipv4Addr`, `Ipv6Addr`
+- `std::time::Duration` (stored in the arena, including subsecond nanos)
 
 Strings and byte slices up to **14 bytes** are stored inline in the map; larger payloads are arena-allocated.
 
@@ -78,13 +79,14 @@ let port: u16 = map.get("port").unwrap();
 
 All three maps provide the same convenience methods:
 
-`get_bool`, `get_u8`, `get_u16`, `get_u32`, `get_u64`, `get_i8`, `get_i16`, `get_i32`, `get_i64`, `get_f32`, `get_f64`, `get_str`, `get_bytes`, `get_char`, `get_ip`, `get_ipv4`, `get_ipv6`
+`get_bool`, `get_u8`, `get_u16`, `get_u32`, `get_u64`, `get_i8`, `get_i16`, `get_i32`, `get_i64`, `get_f32`, `get_f64`, `get_str`, `get_bytes`, `get_char`, `get_ip`, `get_ipv4`, `get_ipv6`, `get_duration`
 
 Or use the generic API:
 
 ```rust
 map.get::<u32>("user.age");
 map.get::<&str>("user.name");
+map.get::<std::time::Duration>("timeout");
 ```
 
 ### In-place updates

@@ -109,6 +109,7 @@ fn check_value_duration() {
     let mut map = StrVarMap::new();
     map.set("timeout", d);
     assert_eq!(map.get::<Duration>("timeout"), Some(d));
+    assert_eq!(map.get_duration("timeout"), Some(d));
     assert!(map.update::<Duration>("timeout", |t| *t += Duration::from_millis(250)));
     assert_eq!(map.get::<Duration>("timeout"), Some(Duration::new(3, 400_000_000)));
 }
