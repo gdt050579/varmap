@@ -104,6 +104,11 @@ impl StrVarMap {
     pub fn allocated_size(&self) -> usize {
         self.map.allocated_size()
     }
+
+    #[inline(always)]
+    pub fn as_readonly(&self) -> Readonly<'_, Self> {
+        Readonly::new(self)
+    }
 }
 
 impl Default for StrVarMap {

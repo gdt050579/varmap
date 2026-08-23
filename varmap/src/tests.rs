@@ -2,6 +2,7 @@ use crate::*;
 use crate::var_map::Key;
 use std::fmt::Debug;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::thread;
 use std::time::Duration;
 
 fn check_type_value<T>(obj: T, kind: ValueKind)
@@ -680,4 +681,70 @@ fn check_enum_var_map_pool_allocate_release() {
 
     pool.release(b);
     pool.release(c);
+}
+
+#[test]
+fn check_var_map_as_readonly_threads() {
+    let mut map = VarMap::new();
+    map.set(var!("port"), 8080u16);
+    map.set(var!("host"), "localhost");
+    map.set(var!("enabled"), true);
+
+    let ro = map.as_readonly();
+    thread::scope(|s| {
+        for _ in 0..4 {
+            s.spawn(|| {
+                assert_eq!(ro.get_u16(var!("port")), Some(8080));
+                assert_eq!(ro.get_str(var!("host")), Some("localhost"));
+                assert_eq!(ro.get_bool(var!("enabled")), Some(true));
+                assert!(ro.contains(var!("port")));
+            });
+        }
+    });
+
+    assert_eq!(map.get_u16(var!("port")), Some(8080));
+}
+
+#[test]
+fn check_str_var_map_as_readonly_threads() {
+    let mut map = StrVarMap::new();
+    map.set("port", 8080u16);
+    map.set("host", "localhost");
+    map.set("enabled", true);
+
+    let ro = map.as_readonly();
+    thread::scope(|s| {
+        for _ in 0..4 {
+            s.spawn(|| {
+                assert_eq!(ro.get_u16("port"), Some(8080));
+                assert_eq!(ro.get_str("host"), Some("localhost"));
+                assert_eq!(ro.get_bool("enabled"), Some(true));
+                assert!(ro.contains("port"));
+            });
+        }
+    });
+
+    assert_eq!(map.get_u16("port"), Some(8080));
+}
+
+#[test]
+fn check_enum_var_map_as_readonly_threads() {
+    let mut map = EnumVarMap::<TestEnum>::new();
+    map.set(TestEnum::Var1, 8080u16);
+    map.set(TestEnum::Var2, true);
+    map.set(TestEnum::Var3, "localhost");
+
+    let ro = map.as_readonly();
+    thread::scope(|s| {
+        for _ in 0..4 {
+            s.spawn(|| {
+                assert_eq!(ro.get_u16(TestEnum::Var1), Some(8080));
+                assert_eq!(ro.get_bool(TestEnum::Var2), Some(true));
+                assert_eq!(ro.get_str(TestEnum::Var3), Some("localhost"));
+                assert!(ro.contains(TestEnum::Var1));
+            });
+        }
+    });
+
+    assert_eq!(map.get_u16(TestEnum::Var1), Some(8080));
 }

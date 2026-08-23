@@ -46,6 +46,7 @@ mod mem_align;
 mod var_map;
 mod str_var_map;
 mod enum_var_map;
+mod readonly;
 mod traits;
 mod types;
 mod pool;
@@ -55,6 +56,7 @@ mod tests;
 
 pub(crate) use arena::{Arena, ArenaIndex};
 pub(crate) use value::ValueKind;
+pub(crate) use readonly::Readonly;
 
 pub use mem_align::MemAlign;
 pub use var_map::VarMap;

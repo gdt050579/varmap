@@ -133,6 +133,11 @@ impl<E: EnumVarMapKey> EnumVarMap<E> {
     pub fn allocated_size(&self) -> usize {
         self.arena.allocated_size() + self.values.len() * std::mem::size_of::<Option<ValueKind>>()
     }
+
+    #[inline(always)]
+    pub fn as_readonly(&self) -> Readonly<'_, Self> {
+        Readonly::new(self)
+    }
 }
 
 impl<E: EnumVarMapKey> Default for EnumVarMap<E> {

@@ -35,7 +35,7 @@ pub trait VarMapValue {
 /// Enum key type for [`EnumVarMap`](struct@crate::EnumVarMap).
 ///
 /// Usually implemented with `#[derive(EnumVarMap)]` rather than by hand.
-pub trait EnumVarMapKey: Copy {
+pub trait EnumVarMapKey: Copy + Sync {
     /// Number of enum variants (and slots in the map).
     const INDEX_COUNT: u16;
 

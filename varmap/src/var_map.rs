@@ -232,6 +232,11 @@ impl VarMap {
     pub fn allocated_size(&self) -> usize {
         self.arena.allocated_size() + self.hashes.capacity() * std::mem::size_of::<Hash>() + self.values.capacity() * std::mem::size_of::<ValueKind>()
     }
+
+    #[inline(always)]
+    pub fn as_readonly(&self) -> Readonly<'_, Self> {
+        Readonly::new(self)
+    }
 }
 
 impl Default for VarMap {
