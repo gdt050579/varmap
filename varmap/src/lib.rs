@@ -52,6 +52,7 @@ mod var_map;
 mod str_var_map;
 mod enum_var_map;
 mod readonly;
+mod shared;
 mod traits;
 mod types;
 mod pool;
@@ -63,6 +64,7 @@ pub(crate) use arena::{Arena, ArenaIndex};
 pub(crate) use value::ValueKind;
 
 pub use readonly::Readonly;
+pub use shared::Shared;
 pub use mem_align::MemAlign;
 pub use var_map::VarMap;
 pub use var_map::Key;

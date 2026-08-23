@@ -246,6 +246,11 @@ impl VarMap {
     pub fn as_readonly(&self) -> Readonly<'_, Self> {
         Readonly::new(self)
     }
+
+    #[inline(always)]
+    pub fn into_shared(self) -> Shared<Self> {
+        Shared::new(self)
+    }
 }
 
 impl Default for VarMap {

@@ -748,3 +748,163 @@ fn check_enum_var_map_as_readonly_threads() {
 
     assert_eq!(map.get_u16(TestEnum::Var1), Some(8080));
 }
+
+const SHARED_TARGET: u32 = 200;
+
+#[test]
+fn check_var_map_into_shared_threads() {
+    let mut map = VarMap::new();
+    map.set(var!("hits"), 0u32);
+    map.set(var!("misses"), 0u32);
+
+    let shared = map.into_shared();
+    assert_eq!(shared.handle_count(), 1);
+
+    thread::scope(|s| {
+        let a = shared.clone();
+        let b = shared.clone();
+        assert_eq!(shared.handle_count(), 3);
+
+        s.spawn(move || {
+            loop {
+                let mut w = a.write();
+                if w.get_u32(var!("hits")).unwrap() >= SHARED_TARGET
+                    && w.get_u32(var!("misses")).unwrap() >= SHARED_TARGET
+                {
+                    break;
+                }
+                if w.get_u32(var!("hits")).unwrap() < SHARED_TARGET {
+                    assert!(w.update::<u32>(var!("hits"), |n| *n += 1));
+                }
+                if w.get_u32(var!("misses")).unwrap() < SHARED_TARGET {
+                    assert!(w.update::<u32>(var!("misses"), |n| *n += 1));
+                }
+            }
+        });
+        s.spawn(move || {
+            loop {
+                let mut w = b.write();
+                if w.get_u32(var!("hits")).unwrap() >= SHARED_TARGET
+                    && w.get_u32(var!("misses")).unwrap() >= SHARED_TARGET
+                {
+                    break;
+                }
+                if w.get_u32(var!("hits")).unwrap() < SHARED_TARGET {
+                    assert!(w.update::<u32>(var!("hits"), |n| *n += 1));
+                }
+                if w.get_u32(var!("misses")).unwrap() < SHARED_TARGET {
+                    assert!(w.update::<u32>(var!("misses"), |n| *n += 1));
+                }
+            }
+        });
+    });
+
+    assert_eq!(shared.handle_count(), 1);
+    let map = shared.read();
+    assert_eq!(map.get_u32(var!("hits")), Some(SHARED_TARGET));
+    assert_eq!(map.get_u32(var!("misses")), Some(SHARED_TARGET));
+}
+
+#[test]
+fn check_str_var_map_into_shared_threads() {
+    let mut map = StrVarMap::new();
+    map.set("hits", 0u32);
+    map.set("misses", 0u32);
+
+    let shared = map.into_shared();
+    assert_eq!(shared.handle_count(), 1);
+
+    thread::scope(|s| {
+        let a = shared.clone();
+        let b = shared.clone();
+        assert_eq!(shared.handle_count(), 3);
+
+        s.spawn(move || {
+            loop {
+                let mut w = a.write();
+                if w.get_u32("hits").unwrap() >= SHARED_TARGET && w.get_u32("misses").unwrap() >= SHARED_TARGET {
+                    break;
+                }
+                if w.get_u32("hits").unwrap() < SHARED_TARGET {
+                    assert!(w.update::<u32>("hits", |n| *n += 1));
+                }
+                if w.get_u32("misses").unwrap() < SHARED_TARGET {
+                    assert!(w.update::<u32>("misses", |n| *n += 1));
+                }
+            }
+        });
+        s.spawn(move || {
+            loop {
+                let mut w = b.write();
+                if w.get_u32("hits").unwrap() >= SHARED_TARGET && w.get_u32("misses").unwrap() >= SHARED_TARGET {
+                    break;
+                }
+                if w.get_u32("hits").unwrap() < SHARED_TARGET {
+                    assert!(w.update::<u32>("hits", |n| *n += 1));
+                }
+                if w.get_u32("misses").unwrap() < SHARED_TARGET {
+                    assert!(w.update::<u32>("misses", |n| *n += 1));
+                }
+            }
+        });
+    });
+
+    assert_eq!(shared.handle_count(), 1);
+    let map = shared.read();
+    assert_eq!(map.get_u32("hits"), Some(SHARED_TARGET));
+    assert_eq!(map.get_u32("misses"), Some(SHARED_TARGET));
+}
+
+#[test]
+fn check_enum_var_map_into_shared_threads() {
+    let mut map = EnumVarMap::<TestEnum>::new();
+    map.set(TestEnum::Var1, 0u32);
+    map.set(TestEnum::Var2, 0u32);
+
+    let shared = map.into_shared();
+    assert_eq!(shared.handle_count(), 1);
+
+    thread::scope(|s| {
+        let a = shared.clone();
+        let b = shared.clone();
+        assert_eq!(shared.handle_count(), 3);
+
+        s.spawn(move || {
+            loop {
+                let mut w = a.write();
+                if w.get_u32(TestEnum::Var1).unwrap() >= SHARED_TARGET
+                    && w.get_u32(TestEnum::Var2).unwrap() >= SHARED_TARGET
+                {
+                    break;
+                }
+                if w.get_u32(TestEnum::Var1).unwrap() < SHARED_TARGET {
+                    assert!(w.update::<u32>(TestEnum::Var1, |n| *n += 1));
+                }
+                if w.get_u32(TestEnum::Var2).unwrap() < SHARED_TARGET {
+                    assert!(w.update::<u32>(TestEnum::Var2, |n| *n += 1));
+                }
+            }
+        });
+        s.spawn(move || {
+            loop {
+                let mut w = b.write();
+                if w.get_u32(TestEnum::Var1).unwrap() >= SHARED_TARGET
+                    && w.get_u32(TestEnum::Var2).unwrap() >= SHARED_TARGET
+                {
+                    break;
+                }
+                if w.get_u32(TestEnum::Var1).unwrap() < SHARED_TARGET {
+                    assert!(w.update::<u32>(TestEnum::Var1, |n| *n += 1));
+                }
+                if w.get_u32(TestEnum::Var2).unwrap() < SHARED_TARGET {
+                    assert!(w.update::<u32>(TestEnum::Var2, |n| *n += 1));
+                }
+            }
+        });
+    });
+
+    assert_eq!(shared.handle_count(), 1);
+    let map = shared.read();
+    assert_eq!(map.get_u32(TestEnum::Var1), Some(SHARED_TARGET));
+    assert_eq!(map.get_u32(TestEnum::Var2), Some(SHARED_TARGET));
+}
