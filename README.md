@@ -1,6 +1,6 @@
 # varmap
 
-A Rust library for **heterogeneous, typed key–value maps** where each key holds exactly one value of a known type at a time. Values are stored in a compact 16-byte tagged representation; strings, byte slices, and large integers use an internal arena so reads return borrowed references (`&str`, `&[u8]`) without per-lookup allocation.
+A Rust library for **heterogeneous, typed key–value maps** where each key holds exactly one value of a known type at a time. Values are stored in a compact 16-byte tagged representation; strings, byte slices, large integers, and fixed-size hashes use an internal arena so reads return borrowed references (`&str`, `&[u8]`, `&[u8; N]`) without per-lookup allocation.
 
 Three map types share the same value encoding and getter API, but differ in how keys are represented:
 
@@ -14,7 +14,7 @@ Three map types share the same value encoding and getter API, but differ in how 
 
 VarMap is aimed at **write once, read many** workloads: you populate keys (configuration, request context, parsed attributes) and then read them repeatedly with cheap typed getters and borrowed `&str` / `&[u8]` results.
 
-The internal arena is **append-only**. Calling `set` on an existing key updates the map entry, but any previous arena allocation for that key is **not** reclaimed. Each overwrite of an arena-backed value (strings and byte slices longer than 14 bytes, `i128` / `u128`, `Ipv6Addr`, `Duration`, custom types, etc.) adds new arena space while the old payload remains until the whole map is reset. Scalars and short strings (≤14 bytes) live entirely in the fixed 16-byte cell, so overwriting those does not grow the arena.
+The internal arena is **append-only**. Calling `set` on an existing key updates the map entry, but any previous arena allocation for that key is **not** reclaimed. Each overwrite of an arena-backed value (strings and byte slices longer than 14 bytes, `i128` / `u128`, `Ipv6Addr`, `Duration`, hashes, custom types, etc.) adds new arena space while the old payload remains until the whole map is reset. Scalars and short strings (≤14 bytes) live entirely in the fixed 16-byte cell, so overwriting those does not grow the arena. In-place `update` of an arena-backed value (including hashes) mutates the existing allocation and does not grow the arena.
 
 | Pattern                                                            | Suitability                                                                |
 | ------------------------------------------------------------------ | -------------------------------------------------------------------------- |
@@ -88,8 +88,29 @@ Built-in types (via `set` / `get` / typed getters):
 - `&str`, `&[u8]` (stored in the arena; returned as borrows)
 - `IpAddr`, `Ipv4Addr`, `Ipv6Addr`
 - `std::time::Duration` (stored in the arena, including subsecond nanos)
+- Fixed-size hashes: `[u8; 16]`, `[u8; 20]`, `[u8; 32]`, `[u8; 48]`, `[u8; 64]` (always arena-backed; returned as `&[u8; N]`)
 
 Strings and byte slices up to **14 bytes** are stored inline in the map; larger payloads are arena-allocated.
+
+`Hash128`, `Hash160`, `Hash256`, `Hash384`, and `Hash512` are type aliases for those arrays (`Hash128` is `[u8; 16]`, and so on). You can use either name:
+
+```rust
+use varmap::{Hash256, StrVarMap};
+
+let mut map = StrVarMap::new();
+let digest = [0xABu8; 32];
+
+map.set("file.hash", digest);
+
+assert_eq!(map.get::<[u8; 32]>("file.hash"), Some(&digest));
+assert_eq!(map.get::<Hash256>("file.hash"), Some(&digest));
+assert_eq!(map.get_hash256("file.hash"), Some(&digest));
+
+assert!(map.update::<[u8; 32]>("file.hash", |h| h[0] = 0xFF));
+assert_eq!(map.get_hash256("file.hash").unwrap()[0], 0xFF);
+```
+
+A hash is distinct from a byte slice of the same length: `get_bytes` / `get::<&[u8]>` will not match a stored `[u8; 32]`, and vice versa.
 
 Custom `Copy` types with alignment 1–16 can use `#[derive(VarMapValue)]` (see [Custom types](#custom-types)).
 
@@ -121,7 +142,7 @@ let port: u16 = map.get("port").unwrap();
 
 All three maps provide the same convenience methods:
 
-`get_bool`, `get_u8`, `get_u16`, `get_u32`, `get_u64`, `get_i8`, `get_i16`, `get_i32`, `get_i64`, `get_f32`, `get_f64`, `get_str`, `get_bytes`, `get_char`, `get_ip`, `get_ipv4`, `get_ipv6`, `get_duration`
+`get_bool`, `get_u8`, `get_u16`, `get_u32`, `get_u64`, `get_i8`, `get_i16`, `get_i32`, `get_i64`, `get_f32`, `get_f64`, `get_str`, `get_bytes`, `get_char`, `get_ip`, `get_ipv4`, `get_ipv6`, `get_duration`, `get_hash128`, `get_hash160`, `get_hash256`, `get_hash384`, `get_hash512`
 
 Or use the generic API:
 
@@ -129,12 +150,13 @@ Or use the generic API:
 map.get::<u32>("user.age");
 map.get::<&str>("user.name");
 map.get::<std::time::Duration>("timeout");
+map.get::<[u8; 32]>("file.hash");
 ```
 
 ### In-place updates
 
 All three maps (`VarMap`, `StrVarMap`, and `EnumVarMap`) support in-place mutation through `update`.
-This is useful for counters and custom `Copy` values that implement `VarMapValue::update` (the derive macro generates this automatically).
+This is useful for counters, hashes (`[u8; N]`), and custom `Copy` values that implement `VarMapValue::update` (the derive macro generates this automatically).
 
 ```rust
 use varmap::{StrVarMap, VarMapValue};
