@@ -29,6 +29,18 @@ macro_rules! impl_getters {
     };
 }
 
+macro_rules! impl_ref_getters {
+    ($($name:ident => $ty:ty),* $(,)?) => {
+        $(
+            #[doc = concat!("Returns the value as `&", stringify!($ty), "`. See [`Self::get`].")]
+            #[inline(always)]
+            pub fn $name(&self, var_name: &str) -> Option<&$ty> {
+                self.map.get::<$ty>(Key::new(fnv1a(var_name)))
+            }
+        )*
+    };
+}
+
 /// Heterogeneous map keyed by `&str`.
 ///
 /// Each `set` / `get` hashes the name with FNV-1a and delegates to an internal [`VarMap`].
@@ -96,6 +108,14 @@ impl StrVarMap {
         get_ipv4 => Ipv4Addr,
         get_ipv6 => Ipv6Addr,
         get_duration => Duration,
+    }
+
+    impl_ref_getters! {
+        get_hash128 => Hash128,
+        get_hash160 => Hash160,
+        get_hash256 => Hash256,
+        get_hash384 => Hash384,
+        get_hash512 => Hash512,
     }
 
     /// Returns `true` if `var_name` has a value (any type).

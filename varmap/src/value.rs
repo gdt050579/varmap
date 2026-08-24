@@ -25,6 +25,11 @@ pub(crate) enum ValueKind {
     SmallBytes([u8; 14], u8),
     Bytes(ArenaIndex),
     Duration(ArenaIndex),
+    Hash128(ArenaIndex),
+    Hash160(ArenaIndex),
+    Hash256(ArenaIndex),
+    Hash384(ArenaIndex),
+    Hash512(ArenaIndex),
     Custom(ArenaIndex, u32),
 }
 

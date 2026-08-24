@@ -237,6 +237,59 @@ fn check_get_bytes() {
     assert_eq!(map.get_bytes("var1"), Some(bytes.as_slice()));
 }
 
+fn check_hash_value<const N: usize>(make_kind: fn(ArenaIndex) -> ValueKind)
+where
+    [u8; N]: for<'a> VarMapValue<Decoded<'a> = &'a [u8; N]>,
+{
+    let mut arena = Arena::new();
+    let mut builder = ValueBuilder::new(&mut arena);
+    let hash = [0xABu8; N];
+    let value = hash.to_value(&mut builder);
+    assert_eq!(*value.kind(), make_kind(ArenaIndex::new(0, N as u32)));
+    assert_eq!(<[u8; N]>::from_value(&value), Some(&hash));
+}
+
+#[test]
+fn check_value_hashes() {
+    check_hash_value::<16>(ValueKind::Hash128);
+    check_hash_value::<20>(ValueKind::Hash160);
+    check_hash_value::<32>(ValueKind::Hash256);
+    check_hash_value::<48>(ValueKind::Hash384);
+    check_hash_value::<64>(ValueKind::Hash512);
+}
+
+#[test]
+fn check_hash_get_and_update() {
+    let mut map = StrVarMap::new();
+    let h128: Hash128 = [0x11; 16];
+    let h160: Hash160 = [0x22; 20];
+    let h256: Hash256 = [0x33; 32];
+    let h384: Hash384 = [0x44; 48];
+    let h512: Hash512 = [0x55; 64];
+
+    map.set("h128", h128);
+    map.set("h160", h160);
+    map.set("h256", h256);
+    map.set("h384", h384);
+    map.set("h512", h512);
+
+    assert_eq!(map.get_hash128("h128"), Some(&h128));
+    assert_eq!(map.get_hash160("h160"), Some(&h160));
+    assert_eq!(map.get_hash256("h256"), Some(&h256));
+    assert_eq!(map.get_hash384("h384"), Some(&h384));
+    assert_eq!(map.get_hash512("h512"), Some(&h512));
+
+    assert_eq!(map.get::<Hash128>("h256"), None);
+    assert_eq!(map.get_bytes("h128"), None);
+
+    assert!(map.update::<Hash128>("h128", |h| h[0] = 0xFF));
+    assert_eq!(map.get_hash128("h128").unwrap()[0], 0xFF);
+    assert_eq!(&map.get_hash128("h128").unwrap()[1..], &h128[1..]);
+
+    assert!(!map.update::<Hash256>("h128", |h| h[0] = 0x00));
+    assert!(!map.update::<Hash128>("missing", |h| h[0] = 0x00));
+}
+
 #[test]
 fn check_var_map_var_proc_macro() {
     let mut map = VarMap::new();

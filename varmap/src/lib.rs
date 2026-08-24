@@ -31,8 +31,11 @@
 //!
 //! # Supported values
 //!
-//! Built-in types: integers, floats, `bool`, `char`, `&str`, `&[u8]`, IP address types, and [`std::time::Duration`].
+//! Built-in types: integers, floats, `bool`, `char`, `&str`, `&[u8]`, IP address types,
+//! [`std::time::Duration`], and fixed-size hashes ([`Hash128`], [`Hash160`], [`Hash256`],
+//! [`Hash384`], [`Hash512`]).
 //! Strings and byte slices up to 14 bytes are stored inline; longer payloads use the arena.
+//! Hashes are always arena-backed and returned as borrowed arrays (`&[u8; N]`).
 //!
 //! Custom `Copy` types (alignment 1–16) can use `#[derive(VarMapValue)]`.
 //!
@@ -85,3 +88,4 @@ pub use pool::StrVarMapPool;
 pub use pool::EnumVarMapPool;
 pub use pool::ClearStrategy;
 pub use pool::PoolHandle;
+pub use types::{Hash128, Hash160, Hash256, Hash384, Hash512};

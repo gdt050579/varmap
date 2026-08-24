@@ -48,6 +48,18 @@ macro_rules! impl_getters {
     };
 }
 
+macro_rules! impl_ref_getters {
+    ($($name:ident => $ty:ty),* $(,)?) => {
+        $(
+            #[doc = concat!("Returns the value as `&", stringify!($ty), "`. See [`Self::get`].")]
+            #[inline(always)]
+            pub fn $name(&self, key: Key) -> Option<&$ty> {
+                self.get::<$ty>(key)
+            }
+        )*
+    };
+}
+
 /// Heterogeneous map keyed by [`Key`].
 ///
 /// Optimized for compile-time key names via [`var!`]. Supports at most **65 536** distinct keys.
@@ -221,6 +233,14 @@ impl VarMap {
         get_ipv4 => Ipv4Addr,
         get_ipv6 => Ipv6Addr,
         get_duration => Duration,
+    }
+
+    impl_ref_getters! {
+        get_hash128 => Hash128,
+        get_hash160 => Hash160,
+        get_hash256 => Hash256,
+        get_hash384 => Hash384,
+        get_hash512 => Hash512,
     }
 
     /// Returns `true` if `key` has a value (any type).
