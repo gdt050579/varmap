@@ -2,7 +2,7 @@
 //!
 //! Each key holds one value of a known type. Values use a compact 16-byte representation;
 //! strings, byte slices, and some large types are stored in a per-map arena so reads can
-//! return `&str` and `&[u8]` without allocating.
+//! return `&str`, `&[u8]`, and typed slices without allocating.
 //!
 //! # Map types
 //!
@@ -31,11 +31,12 @@
 //!
 //! # Supported values
 //!
-//! Built-in types: integers, floats, `bool`, `char`, `&str`, `&[u8]`, IP address types,
-//! [`std::time::Duration`], and fixed-size hashes ([`Hash128`], [`Hash160`], [`Hash256`],
-//! [`Hash384`], [`Hash512`]).
+//! Built-in types: integers, floats, `bool`, `char`, `&str`, `&[u8]`, typed slices
+//! (`&[bool]`, `&[i8]`, `&[i16]`, `&[i32]`, `&[i64]`, `&[u16]`, `&[u32]`, `&[u64]`,
+//! `&[f32]`, `&[f64]`), IP address types, [`std::time::Duration`], and
+//! fixed-size hashes ([`Hash128`], [`Hash160`], [`Hash256`], [`Hash384`], [`Hash512`]).
 //! Strings and byte slices up to 14 bytes are stored inline; longer payloads use the arena.
-//! Hashes are always arena-backed and returned as borrowed arrays (`&[u8; N]`).
+//! Typed slices and hashes are always arena-backed (`&[T]` / `&[u8; N]`).
 //!
 //! Custom `Copy` types (alignment 1–16) can use `#[derive(VarMapValue)]`.
 //!
@@ -47,9 +48,11 @@
 //! let mut map = StrVarMap::new();
 //! map.set("port", 8080u16);
 //! map.set("host", "localhost");
+//! map.set("samples", &[1u16, 2, 3][..]);
 //!
 //! assert_eq!(map.get_u16("port"), Some(8080));
 //! assert_eq!(map.get_str("host"), Some("localhost"));
+//! assert_eq!(map.get_u16_slice("samples"), Some(&[1, 2, 3][..]));
 //! ```
 
 mod arena;

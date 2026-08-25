@@ -237,6 +237,63 @@ fn check_get_bytes() {
     assert_eq!(map.get_bytes("var1"), Some(bytes.as_slice()));
 }
 
+fn check_slice_value<T>(slice: &[T], make_kind: fn(ArenaIndex) -> ValueKind)
+where
+    T: Copy + PartialEq + std::fmt::Debug,
+    for<'a> &'a [T]: VarMapValue<Decoded<'a> = &'a [T]>,
+{
+    let mut arena = Arena::new();
+    let mut builder = ValueBuilder::new(&mut arena);
+    let value = slice.to_value(&mut builder);
+    let size = std::mem::size_of_val(slice) as u32;
+    assert_eq!(*value.kind(), make_kind(ArenaIndex::new(0, size)));
+    assert_eq!(<&[T]>::from_value(&value), Some(slice));
+}
+
+#[test]
+fn check_value_slices() {
+    check_slice_value(&[true, false, true][..], ValueKind::SliceBool);
+    check_slice_value(&[1i8, -2, 3][..], ValueKind::SliceI8);
+    check_slice_value(&[1u16, 2, 3][..], ValueKind::SliceU16);
+    check_slice_value(&[-1i16, 2][..], ValueKind::SliceI16);
+    check_slice_value(&[1u32, 2, 3][..], ValueKind::SliceU32);
+    check_slice_value(&[-1i32, 2][..], ValueKind::SliceI32);
+    check_slice_value(&[1u64, 2][..], ValueKind::SliceU64);
+    check_slice_value(&[-1i64, 2][..], ValueKind::SliceI64);
+    check_slice_value(&[1.5f32, -2.25][..], ValueKind::SliceF32);
+    check_slice_value(&[1.5f64, -2.25][..], ValueKind::SliceF64);
+    check_slice_value::<u16>(&[][..], ValueKind::SliceU16);
+}
+
+#[test]
+fn check_get_slices() {
+    let mut map = StrVarMap::new();
+    let bools = [true, false, true];
+    let u16s = [1u16, 2, 3];
+    let i8s = [1i8, -2, 3];
+    let f32s = [1.5f32, -0.5];
+
+    map.set("bools", bools.as_slice());
+    map.set("u16s", u16s.as_slice());
+    map.set("i8s", i8s.as_slice());
+    map.set("f32s", f32s.as_slice());
+    map.set("empty", &[] as &[u32]);
+    map.set("bytes", [1u8, 2, 3].as_slice());
+
+    assert_eq!(map.get_bool_slice("bools"), Some(bools.as_slice()));
+    assert_eq!(map.get_u16_slice("u16s"), Some(u16s.as_slice()));
+    assert_eq!(map.get_i8_slice("i8s"), Some(i8s.as_slice()));
+    assert_eq!(map.get_f32_slice("f32s"), Some(f32s.as_slice()));
+    assert_eq!(map.get_u32_slice("empty"), Some(&[][..]));
+
+    assert_eq!(map.get::<&[u32]>("u16s"), None);
+    assert_eq!(map.get_bytes("u16s"), None);
+    assert_eq!(map.get_i8_slice("bytes"), None);
+    assert_eq!(map.get_bytes("bools"), None);
+    assert_eq!(map.get_bool_slice("i8s"), None);
+    assert_eq!(map.get_bytes("i8s"), None);
+}
+
 fn check_hash_value<const N: usize>(make_kind: fn(ArenaIndex) -> ValueKind)
 where
     [u8; N]: for<'a> VarMapValue<Decoded<'a> = &'a [u8; N]>,

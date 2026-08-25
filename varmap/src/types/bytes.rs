@@ -27,6 +27,7 @@ impl VarMapValue for &[u8] {
         let kind = value.borrowed_kind()?;
         decode_bytes_kind(kind, value.arena())
     }
+    
 }
 
 fn decode_bytes_kind<'a>(kind: &'a ValueKind, arena: &'a Arena) -> Option<&'a [u8]> {

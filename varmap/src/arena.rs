@@ -21,6 +21,28 @@ impl Arena {
             current_offset: 0,
         }
     }
+    pub(crate) fn store_slice<T: Copy>(&mut self, slice: &[T], align: MemAlign) -> ArenaIndex {
+        let bytes = unsafe {
+            std::slice::from_raw_parts(
+                slice.as_ptr().cast::<u8>(),
+                std::mem::size_of_val(slice),
+            )
+        };
+        self.store(bytes, align)
+    }
+
+    pub(crate) fn get_slice<T: Copy>(&self, index: ArenaIndex) -> Option<&[T]> {
+        let bytes = self.get(index)?;
+        let size = std::mem::size_of::<T>();
+        if size == 0 || bytes.len() % size != 0 {
+            return None;
+        }
+        debug_assert_eq!(bytes.as_ptr() as usize % std::mem::align_of::<T>(), 0);
+        Some(unsafe {
+            std::slice::from_raw_parts(bytes.as_ptr().cast::<T>(), bytes.len() / size)
+        })
+    }
+
     pub(crate) fn store(&mut self, buf: &[u8], align: MemAlign) -> ArenaIndex {
         let start = align.align_offset(self.current_offset);
         let end = start + buf.len();

@@ -1,6 +1,6 @@
 # varmap
 
-A Rust library for **heterogeneous, typed key–value maps** where each key holds exactly one value of a known type at a time. Values are stored in a compact 16-byte tagged representation; strings, byte slices, large integers, and fixed-size hashes use an internal arena so reads return borrowed references (`&str`, `&[u8]`, `&[u8; N]`) without per-lookup allocation.
+A Rust library for **heterogeneous, typed key–value maps** where each key holds exactly one value of a known type at a time. Values are stored in a compact 16-byte tagged representation; strings, byte slices, typed slices, large integers, and fixed-size hashes use an internal arena so reads return borrowed references (`&str`, `&[u8]`, `&[T]`, `&[u8; N]`) without per-lookup allocation.
 
 Three map types share the same value encoding and getter API, but differ in how keys are represented:
 
@@ -12,9 +12,9 @@ Three map types share the same value encoding and getter API, but differ in how 
 
 ## Usage model
 
-VarMap is aimed at **write once, read many** workloads: you populate keys (configuration, request context, parsed attributes) and then read them repeatedly with cheap typed getters and borrowed `&str` / `&[u8]` results.
+VarMap is aimed at **write once, read many** workloads: you populate keys (configuration, request context, parsed attributes) and then read them repeatedly with cheap typed getters and borrowed `&str` / `&[u8]` / `&[T]` results.
 
-The internal arena is **append-only**. Calling `set` on an existing key updates the map entry, but any previous arena allocation for that key is **not** reclaimed. Each overwrite of an arena-backed value (strings and byte slices longer than 14 bytes, `i128` / `u128`, `Ipv6Addr`, `Duration`, hashes, custom types, etc.) adds new arena space while the old payload remains until the whole map is reset. Scalars and short strings (≤14 bytes) live entirely in the fixed 16-byte cell, so overwriting those does not grow the arena. In-place `update` of an arena-backed value (including hashes) mutates the existing allocation and does not grow the arena.
+The internal arena is **append-only**. Calling `set` on an existing key updates the map entry, but any previous arena allocation for that key is **not** reclaimed. Each overwrite of an arena-backed value (strings and byte slices longer than 14 bytes, typed slices, `i128` / `u128`, `Ipv6Addr`, `Duration`, hashes, custom types, etc.) adds new arena space while the old payload remains until the whole map is reset. Scalars and short strings/bytes (≤14 bytes) live entirely in the fixed 16-byte cell, so overwriting those does not grow the arena. In-place `update` of an arena-backed value (including hashes) mutates the existing allocation and does not grow the arena.
 
 | Pattern                                                            | Suitability                                                                |
 | ------------------------------------------------------------------ | -------------------------------------------------------------------------- |
@@ -86,11 +86,12 @@ Built-in types (via `set` / `get` / typed getters):
 - Floats: `f32`, `f64`
 - `bool`, `char`
 - `&str`, `&[u8]` (stored in the arena; returned as borrows)
+- Typed slices: `&[bool]`, `&[i8]`, `&[i16]`, `&[i32]`, `&[i64]`, `&[u16]`, `&[u32]`, `&[u64]`, `&[f32]`, `&[f64]` (always arena-backed; returned as borrows)
 - `IpAddr`, `Ipv4Addr`, `Ipv6Addr`
 - `std::time::Duration` (stored in the arena, including subsecond nanos)
 - Fixed-size hashes: `[u8; 16]`, `[u8; 20]`, `[u8; 32]`, `[u8; 48]`, `[u8; 64]` (always arena-backed; returned as `&[u8; N]`)
 
-Strings and byte slices up to **14 bytes** are stored inline in the map; larger payloads are arena-allocated.
+Strings and byte slices (`&str`, `&[u8]`) up to **14 bytes** are stored inline in the map; larger payloads are arena-allocated. Typed slices are always arena-backed (no inline path), so they stay aligned for element types wider than a byte.
 
 `Hash128`, `Hash160`, `Hash256`, `Hash384`, and `Hash512` are type aliases for those arrays (`Hash128` is `[u8; 16]`, and so on). You can use either name:
 
@@ -111,6 +112,20 @@ assert_eq!(map.get_hash256("file.hash").unwrap()[0], 0xFF);
 ```
 
 A hash is distinct from a byte slice of the same length: `get_bytes` / `get::<&[u8]>` will not match a stored `[u8; 32]`, and vice versa.
+
+Typed slices are distinct from each other and from `&[u8]`:
+
+```rust
+use varmap::StrVarMap;
+
+let mut map = StrVarMap::new();
+map.set("samples", &[1u16, 2, 3][..]);
+
+assert_eq!(map.get::<&[u16]>("samples"), Some(&[1, 2, 3][..]));
+assert_eq!(map.get_u16_slice("samples"), Some(&[1, 2, 3][..]));
+assert_eq!(map.get_bytes("samples"), None);
+assert_eq!(map.get_u32_slice("samples"), None);
+```
 
 Custom `Copy` types with alignment 1–16 can use `#[derive(VarMapValue)]` (see [Custom types](#custom-types)).
 
@@ -142,13 +157,14 @@ let port: u16 = map.get("port").unwrap();
 
 All three maps provide the same convenience methods:
 
-`get_bool`, `get_u8`, `get_u16`, `get_u32`, `get_u64`, `get_i8`, `get_i16`, `get_i32`, `get_i64`, `get_f32`, `get_f64`, `get_str`, `get_bytes`, `get_char`, `get_ip`, `get_ipv4`, `get_ipv6`, `get_duration`, `get_hash128`, `get_hash160`, `get_hash256`, `get_hash384`, `get_hash512`
+`get_bool`, `get_u8`, `get_u16`, `get_u32`, `get_u64`, `get_i8`, `get_i16`, `get_i32`, `get_i64`, `get_f32`, `get_f64`, `get_str`, `get_bytes`, `get_bool_slice`, `get_i8_slice`, `get_i16_slice`, `get_i32_slice`, `get_i64_slice`, `get_u16_slice`, `get_u32_slice`, `get_u64_slice`, `get_f32_slice`, `get_f64_slice`, `get_char`, `get_ip`, `get_ipv4`, `get_ipv6`, `get_duration`, `get_hash128`, `get_hash160`, `get_hash256`, `get_hash384`, `get_hash512`
 
 Or use the generic API:
 
 ```rust
 map.get::<u32>("user.age");
 map.get::<&str>("user.name");
+map.get::<&[u16]>("samples");
 map.get::<std::time::Duration>("timeout");
 map.get::<[u8; 32]>("file.hash");
 ```
